@@ -20,15 +20,21 @@ import { REDIS } from './redis.tokens.js';
       inject: [ENV],
       useFactory: (env: Env) =>
         new Redis(env.REDIS_URL, {
-          // Surface a connection problem as a failed command rather than
-          // queueing commands forever, so the health check can report `down`.
-          maxRetriesPerRequest: 2,
-          enableOfflineQueue: false,
           // Connect on the first command rather than on construction, so the
           // application graph can be built without Redis running. The OpenAPI
-          // export relies on that, and it means a Redis outage surfaces as a
+          // export relies on that, and a Redis outage then surfaces as a
           // failed command the health check can report, not a boot failure.
           lazyConnect: true,
+
+          // The offline queue has to stay on alongside lazy connecting: it is
+          // what holds the very first command while the connection is being
+          // established. Turning it off makes that first command fail on every
+          // fresh process, whether or not Redis is reachable.
+          enableOfflineQueue: true,
+
+          // What actually bounds a command during an outage, so a queued
+          // command cannot wait for a reconnection that never comes.
+          maxRetriesPerRequest: 2,
           connectTimeout: 5_000,
         }),
     },
