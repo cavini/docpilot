@@ -86,14 +86,24 @@ export function baseConfig(tsconfigRootDir) {
       files: ['**/*.config.{js,ts,mjs,cjs}', '**/scripts/**/*.ts'],
       rules: { 'no-console': 'off' },
     },
-    {
-      // Config files sit outside every tsconfig `include`, so the project
-      // service cannot type them. They do not need type-aware rules either.
-      files: ['**/*.{js,mjs,cjs}', '**/*.config.{ts,mts,cts}'],
-      extends: [tseslint.configs.disableTypeChecked],
-    },
     prettier,
   );
 }
+
+/**
+ * Turns off type-aware rules for files no tsconfig includes: plain JavaScript,
+ * and the config files that live at a workspace root.
+ *
+ * Flat config applies layers in order, so this **must be the last layer** in
+ * the final config. Any scoped layer placed after it can re-enable a
+ * type-aware rule for a file the project service cannot type, which makes
+ * ESLint fail on the file rather than report a problem in it.
+ *
+ * @type {import('typescript-eslint').ConfigArray}
+ */
+export const untypedFileOverrides = tseslint.config({
+  files: ['**/*.{js,mjs,cjs}', '**/*.config.{ts,mts,cts}'],
+  extends: [tseslint.configs.disableTypeChecked],
+});
 
 export default baseConfig;
