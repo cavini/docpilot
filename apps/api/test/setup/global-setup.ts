@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -72,6 +73,16 @@ export default async function globalSetup(): Promise<void> {
   await localstack.exec(['awslocal', 's3', 'mb', `s3://${BUCKET}`]);
 
   globalThis.__DOCPILOT_CONTAINERS__ = { postgres, redis, localstack };
+
+  // The containers start empty. Running the committed migrations against
+  // them means the tests exercise the real schema, including the generated
+  // tsvector column and the HNSW index, rather than one built by hand in a
+  // fixture that could drift from what ships.
+  execFileSync('pnpm', ['exec', 'drizzle-kit', 'migrate'], {
+    cwd: process.cwd(),
+    env: { ...process.env, DATABASE_URL: postgres.getConnectionUri() },
+    stdio: 'pipe',
+  });
 
   writeFileSync(
     CONTAINER_INFO_PATH,
