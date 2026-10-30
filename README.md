@@ -7,8 +7,8 @@ act on it through tools and MCP.
 
 ## Status
 
-Early development. The quick start, architecture overview and documentation
-land with the milestones that implement them.
+Early development. The quick start, architecture overview and documentation land
+with the milestones that implement them.
 
 ## License
 
