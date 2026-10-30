@@ -22,6 +22,7 @@
     "db:migrate": "pnpm --filter @docpilot/api db:migrate",
     "db:studio": "pnpm --filter @docpilot/api db:studio",
     "openapi:export": "pnpm --filter @docpilot/api openapi:export",
+    "codegen": "pnpm --filter @docpilot/web typegen",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "turbo run typecheck",
@@ -31,7 +32,8 @@
     "clean": "turbo run clean && rm -rf node_modules/.cache .turbo",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "pnpm --filter @docpilot/web typegen"
   },
   "devDependencies": {
     "@docpilot/eslint-config": "workspace:*",
