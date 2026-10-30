@@ -1,0 +1,88 @@
+# Local infrastructure for development and for the container-backed tests.
+# Nothing here is production configuration: credentials are fixed dev values
+# and every service is published on localhost.
+name: docpilot
+
+services:
+  postgres:
+    # pgvector ships Postgres with the vector extension already compiled in.
+    # Pinned to Postgres 17 because that is what the managed hosts used in
+    # production offer, so local and deployed behaviour match.
+    image: pgvector/pgvector:0.8.7-pg17
+    container_name: docpilot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: docpilot
+      POSTGRES_PASSWORD: docpilot
+      POSTGRES_DB: docpilot
+      # Deterministic collation keeps full-text ranking stable across machines.
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C'
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U docpilot -d docpilot']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:8.8-alpine
+    container_name: docpilot-redis
+    restart: unless-stopped
+    # BullMQ requires noeviction: it keeps job state in Redis, and silently
+    # evicting a key under memory pressure would lose jobs.
+    command:
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --maxmemory-policy
+      - noeviction
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  localstack:
+    # Stands in for S3 so document storage runs the real AWS SDK code path
+    # locally and in tests, with no AWS account and no network calls.
+    #
+    # Pinned to the 4.x line deliberately. From release 2026.04.0 onward the
+    # localstack/localstack image refuses to start without a paid
+    # LOCALSTACK_AUTH_TOKEN, which would mean this project could not be run or
+    # tested without an account. 4.14.0 is the last release that starts with no
+    # credentials, and S3 is the only service used here, so there is nothing to
+    # gain from the newer line. See docs/adr/0008-s3-storage-with-localstack.md.
+    image: localstack/localstack:4.14.0
+    container_name: docpilot-localstack
+    restart: unless-stopped
+    environment:
+      SERVICES: s3
+      DEBUG: '0'
+      AWS_DEFAULT_REGION: us-east-1
+    ports:
+      - '4566:4566'
+    volumes:
+      # Scripts in ready.d run once LocalStack reports ready.
+      - ./scripts/localstack:/etc/localstack/init/ready.d:ro
+      - localstack-data:/var/lib/localstack
+    healthcheck:
+      # Gates readiness on the bucket existing, not just on the port being
+      # open, so `infra:up --wait` returns only when storage is usable.
+      test: ['CMD-SHELL', 'awslocal s3api head-bucket --bucket "${S3_BUCKET:-docpilot-documents}"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+volumes:
+  postgres-data:
+  redis-data:
+  localstack-data:
