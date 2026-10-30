@@ -41,7 +41,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
-    "postinstall": "pnpm --filter @docpilot/web typegen"
+    "postinstall": "turbo run build --filter=@docpilot/shared --filter=@docpilot/testing && pnpm --filter @docpilot/web typegen"
   },
   "devDependencies": {
     "@docpilot/eslint-config": "workspace:*",
