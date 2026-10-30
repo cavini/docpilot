@@ -15,6 +15,9 @@
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --coverage",
+    "test:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.integration.config.mjs",
+    "test:e2e": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.e2e.config.mjs",
+    "test:contract": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.contract.config.mjs",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
@@ -46,13 +49,21 @@
     "@nestjs/testing": "12.3.2",
     "@swc/core": "1.16.20",
     "@swc/jest": "0.2.39",
+    "@testcontainers/localstack": "12.2.1",
+    "@testcontainers/postgresql": "12.2.1",
+    "@testcontainers/redis": "12.2.1",
     "@types/express": "5.0.5",
     "@types/jest": "30.0.0",
     "@types/node": "26.6.6",
     "@types/pg": "8.15.6",
+    "@types/supertest": "7.2.1",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "drizzle-kit": "0.31.11",
     "jest": "30.5.2",
     "pino-pretty": "13.2.0",
+    "supertest": "7.3.1",
+    "testcontainers": "12.2.1",
     "typescript": "6.0.3"
   }
 }
