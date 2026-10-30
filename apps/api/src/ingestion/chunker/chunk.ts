@@ -50,3 +50,29 @@ export interface ChunkOptions {
   /** Counts tokens the way the embedding model will. */
   countTokens: (text: string) => number;
 }
+
+/**
+ * The text a chunk should be embedded as.
+ *
+ * Prefixes the heading path, because a passage frequently never names the
+ * section it belongs to. The chunk under "Authentication" begins "Call
+ * POST /auth/token…" and contains the word "authentication" nowhere, so its
+ * embedding sits far from the question "how do I authenticate?" unless the
+ * heading travels with it.
+ *
+ * Only the embedding and the keyword index see this. A citation shows the
+ * passage itself, so the reader gets the text rather than a path they can
+ * already see in the citation's own metadata.
+ *
+ * @param chunk The chunk to embed.
+ * @returns Text to send to the embedding model.
+ *
+ * @example
+ * ```ts
+ * embeddingTextFor({ headingPath: 'Auth > Tokens', content: 'Call POST…' });
+ * // 'Auth > Tokens\n\nCall POST…'
+ * ```
+ */
+export function embeddingTextFor(chunk: Pick<Chunk, 'headingPath' | 'content'>): string {
+  return chunk.headingPath ? `${chunk.headingPath}\n\n${chunk.content}` : chunk.content;
+}
