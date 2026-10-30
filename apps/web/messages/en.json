@@ -1,0 +1,27 @@
+{
+  "app": {
+    "name": "DocPilot",
+    "tagline": "Answers about your documentation, with citations back to the source."
+  },
+  "home": {
+    "heading": "DocPilot",
+    "intro": "Ask questions about a set of documents and get answers with citations pointing at the exact source passage.",
+    "statusHeading": "System status"
+  },
+  "status": {
+    "loading": "Checking the API…",
+    "unreachable": "The API is not reachable. Start it with pnpm dev.",
+    "overall": "Overall",
+    "database": "Database",
+    "redis": "Redis",
+    "storage": "Storage",
+    "ok": "Operational",
+    "degraded": "Degraded",
+    "down": "Unavailable"
+  },
+  "locale": {
+    "label": "Language",
+    "en": "English",
+    "pt-BR": "Português (Brasil)"
+  }
+}

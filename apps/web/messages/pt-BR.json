@@ -1,0 +1,27 @@
+{
+  "app": {
+    "name": "DocPilot",
+    "tagline": "Respostas sobre a sua documentação, com citações até a fonte."
+  },
+  "home": {
+    "heading": "DocPilot",
+    "intro": "Faça perguntas sobre um conjunto de documentos e receba respostas com citações que apontam para o trecho exato da fonte.",
+    "statusHeading": "Status do sistema"
+  },
+  "status": {
+    "loading": "Verificando a API…",
+    "unreachable": "A API não está acessível. Inicie-a com pnpm dev.",
+    "overall": "Geral",
+    "database": "Banco de dados",
+    "redis": "Redis",
+    "storage": "Armazenamento",
+    "ok": "Operacional",
+    "degraded": "Degradado",
+    "down": "Indisponível"
+  },
+  "locale": {
+    "label": "Idioma",
+    "en": "English",
+    "pt-BR": "Português (Brasil)"
+  }
+}
