@@ -1,5 +1,5 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, type OnApplicationBootstrap } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { type Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
@@ -16,6 +16,7 @@ import { chunkDocument, embeddingTextFor } from './chunker/index.js';
 import { INGESTION_QUEUE, type IngestionJobData, STAGE_PROGRESS } from './ingestion.constants.js';
 import { INGESTION_EVENT_CHANNEL, type IngestionEvent } from './ingestion.events.js';
 import { detectLanguage, ParserRegistry, UnreadableDocumentError } from './parsers/index.js';
+import { RUN_WORKER } from './worker.tokens.js';
 import { TokenizerService } from './tokenizer/tokenizer.service.js';
 
 /**
@@ -27,7 +28,7 @@ import { TokenizerService } from './tokenizer/tokenizer.service.js';
  */
 @Injectable()
 @Processor(INGESTION_QUEUE)
-export class IngestionProcessor extends WorkerHost {
+export class IngestionProcessor extends WorkerHost implements OnApplicationBootstrap {
   constructor(
     @Inject(DATABASE) private readonly db: Database,
     @Inject(ENV) private readonly env: Env,
@@ -36,10 +37,27 @@ export class IngestionProcessor extends WorkerHost {
     private readonly tokenizer: TokenizerService,
     private readonly embedder: EmbedderService,
     private readonly events: EventEmitter2,
+    @Inject(RUN_WORKER) private readonly runWorker: boolean,
     private readonly logger: PinoLogger,
   ) {
     super();
     this.logger.setContext(IngestionProcessor.name);
+  }
+
+  /**
+   * Stops this process consuming the queue unless it is meant to.
+   *
+   * The provider is registered either way, so it stays injectable and
+   * testable; only whether it picks work up is conditional.
+   */
+  async onApplicationBootstrap(): Promise<void> {
+    if (!this.runWorker) {
+      await this.worker.pause();
+      this.logger.debug('ingestion worker registered but not consuming in this process');
+      return;
+    }
+
+    this.logger.info({ concurrency: this.env.WORKER_CONCURRENCY }, 'ingestion worker consuming');
   }
 
   /**

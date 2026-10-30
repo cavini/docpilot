@@ -8,6 +8,7 @@ import { IngestionProcessor } from './ingestion.processor.js';
 import { ParserRegistry, PdfParser, TextParser } from './parsers/index.js';
 import { IngestionProgressGateway } from './progress.gateway.js';
 import { TokenizerService } from './tokenizer/tokenizer.service.js';
+import { RUN_WORKER } from './worker.tokens.js';
 
 /**
  * The ingestion pipeline: parse, chunk, embed, store, and report progress.
@@ -49,8 +50,10 @@ import { TokenizerService } from './tokenizer/tokenizer.service.js';
     ParserRegistry,
     TokenizerService,
     IngestionProgressGateway,
-    ...(process.env.WORKER_MODE === 'off' ? [] : [IngestionProcessor]),
+    IngestionProcessor,
+    // Overridden by the entrypoint that actually runs a worker.
+    { provide: RUN_WORKER, useValue: false },
   ],
-  exports: [BullModule, ParserRegistry, TokenizerService],
+  exports: [BullModule, ParserRegistry, TokenizerService, IngestionProcessor],
 })
 export class IngestionModule {}

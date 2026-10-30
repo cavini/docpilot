@@ -22,7 +22,11 @@ async function bootstrap(): Promise<void> {
   // Must run before the instrumented modules are constructed.
   await startTracing(env);
 
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // With `separate`, a dedicated process consumes the queue instead.
+  const app = await NestFactory.create(
+    AppModule.forRoot({ runWorker: env.WORKER_MODE === 'inline' }),
+    { bufferLogs: true },
+  );
 
   app.useLogger(app.get(Logger));
   app.flushLogs();
