@@ -1,21 +1,21 @@
-import { Global, Module } from '@nestjs/common';
 import { S3Client } from '@aws-sdk/client-s3';
+import { Global, Module } from '@nestjs/common';
 
 import { type Env } from '../config/env.schema.js';
 import { ENV } from '../config/env.tokens.js';
-import { StorageProbe } from './storage-probe.service.js';
+import { LocalStorage } from './local.storage.js';
+import { S3Storage } from './s3.storage.js';
+import { StorageService } from './storage.service.js';
 import { S3_CLIENT } from './storage.tokens.js';
 
 /**
- * Owns the connection to document storage.
+ * Owns document storage.
  *
  * The client is built from configuration rather than from AWS's default
  * credential chain, so the same code reaches a local emulator, a self-hosted
  * S3-compatible store, or real AWS depending only on `S3_ENDPOINT` and
- * `S3_FORCE_PATH_STYLE`.
- *
- * In M0 this module exists to let the health check prove storage is reachable.
- * The read and write API arrives with the ingestion pipeline.
+ * `S3_FORCE_PATH_STYLE`. The driver is chosen once, here, so nothing
+ * downstream branches on which one is in use.
  */
 @Global()
 @Module({
@@ -37,8 +37,15 @@ import { S3_CLIENT } from './storage.tokens.js';
           maxAttempts: 2,
         }),
     },
-    StorageProbe,
+    S3Storage,
+    LocalStorage,
+    {
+      provide: StorageService,
+      inject: [ENV, S3Storage, LocalStorage],
+      useFactory: (env: Env, s3: S3Storage, local: LocalStorage): StorageService =>
+        env.STORAGE_DRIVER === 'local' ? local : s3,
+    },
   ],
-  exports: [S3_CLIENT, StorageProbe],
+  exports: [StorageService, S3_CLIENT],
 })
 export class StorageModule {}
