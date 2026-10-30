@@ -111,7 +111,7 @@ Requires **Node 26** (see [`.nvmrc`](./.nvmrc)), **pnpm 10** and **Docker**.
 ```bash
 nvm use                 # or install Node 26 another way
 pnpm install
-cp .env.example .env
+cp .env.example .env    # loaded automatically; nothing to export
 pnpm infra:up           # Postgres + pgvector, Redis, S3
 pnpm db:migrate
 pnpm dev                # API on :3001, web on :3000

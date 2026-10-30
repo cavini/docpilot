@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module.js';
+import { loadDotenv } from './config/load-dotenv.js';
 import { buildOpenApiDocument } from './swagger.js';
 
 /**
@@ -28,6 +29,8 @@ const OUTPUT_PATH = resolve(process.cwd(), 'openapi.json');
  * storage available. That matters: it belongs in the cheap static stage of CI.
  */
 async function exportOpenApi(): Promise<void> {
+  loadDotenv();
+
   const app = await NestFactory.create(AppModule, { logger: false });
   await app.init();
 
