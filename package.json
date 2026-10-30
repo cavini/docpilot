@@ -1,0 +1,28 @@
+{
+  "name": "docpilot",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Answers questions about your documentation with cited sources, and acts on it through tools and MCP",
+  "license": "MIT",
+  "author": "Arthur Cavini",
+  "packageManager": "pnpm@10.11.0",
+  "engines": {
+    "node": ">=26.13.0 <27",
+    "pnpm": ">=10.11.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "clean": "turbo run clean && rm -rf node_modules/.cache .turbo",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "3.9.10",
+    "turbo": "2.11.10",
+    "typescript": "6.0.3"
+  }
+}
