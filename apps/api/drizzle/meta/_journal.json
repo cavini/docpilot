@@ -8,6 +8,13 @@
       "when": 1793392402189,
       "tag": "0000_enable_vector_extension",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793398326486,
+      "tag": "0001_documents_chunks_usage",
+      "breakpoints": true
     }
   ]
 }
