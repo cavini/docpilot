@@ -87,7 +87,9 @@ export function baseConfig(tsconfigRootDir) {
       rules: { 'no-console': 'off' },
     },
     {
-      files: ['**/*.{js,mjs,cjs}'],
+      // Config files sit outside every tsconfig `include`, so the project
+      // service cannot type them. They do not need type-aware rules either.
+      files: ['**/*.{js,mjs,cjs}', '**/*.config.{ts,mts,cts}'],
       extends: [tseslint.configs.disableTypeChecked],
     },
     prettier,
