@@ -45,7 +45,11 @@ describe('chunkDocument', () => {
   });
 
   it('AC3: overlaps consecutive chunks by roughly the configured amount', () => {
-    const text = Array.from({ length: 6 }, () => paragraph(40)).join('\n\n');
+    // Each paragraph uses a distinct word. With identical paragraphs any
+    // suffix matches any prefix, and the measurement below would report an
+    // overlap that is really just repetition in the fixture.
+    const words = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot'];
+    const text = words.map((word) => paragraph(40, word)).join('\n\n');
 
     const chunks = chunkDocument(parseForTest(text), options({ overlapTokens: 20 }));
 
