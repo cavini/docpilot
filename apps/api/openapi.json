@@ -1,0 +1,165 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/feature-flags": {
+      "get": {
+        "operationId": "FeatureFlagsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Every flag with its current value"
+          }
+        },
+        "summary": "List feature flags and their current values",
+        "tags": ["feature-flags"]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Every dependency is usable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "At least one dependency is down",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Health of the API and its dependencies",
+        "tags": ["health"]
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "HealthController_live",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The process is running"
+          }
+        },
+        "summary": "Liveness only, with no dependency probes",
+        "tags": ["health"]
+      }
+    }
+  },
+  "info": {
+    "title": "DocPilot API",
+    "description": "Answers questions about uploaded documents with citations back to the\nexact source chunk, and acts on them through tools.\n\nResponses that fail carry the shape `{ error: { code, message, requestId } }`.\nBranch on `code`, which is stable, rather than on `message`.",
+    "version": "0.0.0",
+    "contact": {},
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": "Liveness and dependency status"
+    },
+    {
+      "name": "feature-flags",
+      "description": "Which capabilities are enabled"
+    }
+  ],
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Local development"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "demoApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
+      }
+    },
+    "schemas": {
+      "DependencyHealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "description": "Whether the dependency answered.",
+            "enum": ["ok", "degraded", "down"],
+            "type": "string",
+            "example": "ok"
+          },
+          "latencyMs": {
+            "type": "number",
+            "description": "Round trip time of the probe, absent when the probe did not complete.",
+            "example": 3
+          },
+          "error": {
+            "type": "string",
+            "description": "Why the probe failed. Never contains credentials.",
+            "example": "connection refused"
+          }
+        },
+        "required": ["status"]
+      },
+      "HealthDependenciesResponse": {
+        "type": "object",
+        "properties": {
+          "database": {
+            "$ref": "#/components/schemas/DependencyHealthResponse"
+          },
+          "redis": {
+            "$ref": "#/components/schemas/DependencyHealthResponse"
+          },
+          "storage": {
+            "$ref": "#/components/schemas/DependencyHealthResponse"
+          }
+        },
+        "required": ["database", "redis", "storage"]
+      },
+      "HealthResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "description": "Worst status across every dependency.",
+            "enum": ["ok", "degraded", "down"],
+            "type": "string",
+            "example": "ok"
+          },
+          "version": {
+            "type": "string",
+            "description": "Application version.",
+            "example": "0.1.0"
+          },
+          "uptimeSeconds": {
+            "type": "number",
+            "description": "Seconds since the process started.",
+            "example": 1284
+          },
+          "checkedAt": {
+            "type": "string",
+            "description": "When the probes ran.",
+            "example": "2026-10-30T12:00:00.000Z"
+          },
+          "dependencies": {
+            "$ref": "#/components/schemas/HealthDependenciesResponse"
+          }
+        },
+        "required": ["status", "version", "uptimeSeconds", "checkedAt", "dependencies"]
+      }
+    }
+  }
+}
