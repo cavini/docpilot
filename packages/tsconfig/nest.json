@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "DocPilot NestJS application",
+  "extends": "./node.json",
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    // Nest injects providers and ORM/DTO fields after construction, so the
+    // compiler cannot see them being assigned.
+    "strictPropertyInitialization": false
+  }
+}
