@@ -23,12 +23,16 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "4.0.93",
+    "@ai-sdk/openai": "4.0.106",
     "@aws-sdk/client-s3": "3.1161.0",
     "@docpilot/shared": "workspace:*",
+    "@docpilot/testing": "workspace:*",
     "@nestjs/common": "12.3.2",
     "@nestjs/core": "12.3.2",
     "@nestjs/platform-express": "12.3.2",
     "@nestjs/swagger": "12.0.5",
+    "ai": "7.0.158",
     "class-transformer": "0.5.1",
     "class-validator": "0.15.1",
     "dd-trace": "6.23.0",

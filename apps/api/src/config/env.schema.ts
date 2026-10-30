@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { EMBEDDING_DIMENSIONS } from '../db/schema/index.js';
+
 /** Parses the strings `true` and `false` that environment variables carry. */
 const booleanFromString = (defaultValue: boolean) =>
   z
@@ -68,6 +70,24 @@ export const envSchema = z
     OPENAI_API_KEY: z.string().optional(),
     ANTHROPIC_API_KEY: z.string().optional(),
 
+    // Defaults to the most capable model. A public demo may well want a
+    // cheaper one; docs/costs.md compares them.
+    CHAT_MODEL: z.string().default('claude-opus-5'),
+
+    // Separate from LLM_PROVIDER on purpose: Anthropic publishes no
+    // first-party embeddings API, so the provider that answers questions and
+    // the one that embeds are independent choices.
+    EMBEDDING_PROVIDER: z.enum(['openai', 'mock']).default('mock'),
+    EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+    EMBEDDING_DIMENSIONS: integerFromString(EMBEDDING_DIMENSIONS),
+
+    // Chunking. Measured against the evals in M7; starting values for now.
+    CHUNK_SIZE_TOKENS: integerFromString(500),
+    CHUNK_OVERLAP_TOKENS: z.coerce.number().int().nonnegative().default(75),
+
+    // Ingestion limits.
+    MAX_UPLOAD_MB: integerFromString(20),
+
     // Feature flags. These are defaults; rows in `feature_flags` override them.
     FF_RERANK: booleanFromString(false),
     FF_GRAPHQL: booleanFromString(true),
@@ -101,6 +121,36 @@ export const envSchema = z
         code: 'custom',
         path: ['ANTHROPIC_API_KEY'],
         message: 'ANTHROPIC_API_KEY is required when LLM_PROVIDER is "anthropic"',
+      });
+    }
+
+    // The vector column has a declared width and an index built for it, so a
+    // mismatch would fail on the first insert rather than at startup.
+    if (env.EMBEDDING_DIMENSIONS !== EMBEDDING_DIMENSIONS) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['EMBEDDING_DIMENSIONS'],
+        message:
+          `EMBEDDING_DIMENSIONS must be ${String(EMBEDDING_DIMENSIONS)} to match the database ` +
+          'column. Changing it means a migration and re-embedding the whole corpus.',
+      });
+    }
+
+    if (env.CHUNK_OVERLAP_TOKENS >= env.CHUNK_SIZE_TOKENS) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['CHUNK_OVERLAP_TOKENS'],
+        message:
+          'CHUNK_OVERLAP_TOKENS must be smaller than CHUNK_SIZE_TOKENS, or every chunk would ' +
+          'repeat the whole of the one before it.',
+      });
+    }
+
+    if (env.EMBEDDING_PROVIDER === 'openai' && !env.OPENAI_API_KEY) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['OPENAI_API_KEY'],
+        message: 'OPENAI_API_KEY is required when EMBEDDING_PROVIDER is "openai"',
       });
     }
 
