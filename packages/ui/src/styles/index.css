@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+/*
+ * Tailwind v4 discovers the classes to generate by scanning files, relative to
+ * the stylesheet that declares the source. This covers the design system's own
+ * components; each consuming application adds its own source directory.
+ */
+@source "../";
