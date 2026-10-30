@@ -1,0 +1,7 @@
+{
+  "extends": "@docpilot/tsconfig/react-library.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", ".storybook/**/*.ts"]
+}

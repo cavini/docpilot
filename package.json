@@ -29,6 +29,8 @@
     "test": "turbo run test",
     "test:watch": "turbo run test:watch",
     "test:coverage": "turbo run test:coverage",
+    "test:storybook": "pnpm --filter @docpilot/ui test:storybook",
+    "storybook": "pnpm --filter @docpilot/ui storybook",
     "clean": "turbo run clean && rm -rf node_modules/.cache .turbo",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
