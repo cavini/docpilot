@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+.next/
+.turbo/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Test and coverage output
+coverage/
+test-results/
+playwright-report/
+blob-report/
+.nyc_output/
+cypress/screenshots/
+cypress/videos/
+storybook-static/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Local data
+/uploads/
+/tmp/
+
+# Editors and OS
+.DS_Store
+.idea/
+*.swp
+.vscode/*
+!.vscode/extensions.json
