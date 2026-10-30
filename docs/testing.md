@@ -146,6 +146,17 @@ The number is a floor, not a goal. A test with no assertion raises coverage and
 proves nothing, so review looks at what is asserted rather than at the
 percentage.
 
+Both Jest and Vitest measure with **V8's native coverage** rather than Babel
+instrumentation. Babel counts the branches SWC emits for decorators and
+parameter injection, which no test can reach: a fully exercised Nest service
+scored about 42% branches while an undecorated module beside it scored 100%.
+Measuring the code as it actually runs makes the number mean something.
+
+Coverage is collected only from code that makes decisions. Nest modules,
+injection tokens, DTOs, route components and framework wiring are declarative or
+are exercised by the end-to-end suites; counting them would dilute the number
+that does carry signal.
+
 ## When a bug is found
 
 Reproduce it first, then fix it:

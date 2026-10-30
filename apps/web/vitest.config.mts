@@ -15,7 +15,17 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/app/**', 'src/proxy.ts'],
+      exclude: [
+        'src/**/*.test.{ts,tsx}',
+        'src/test/**',
+        // Route components and the locale proxy are framework wiring, covered
+        // by the Playwright journeys rather than in isolation.
+        'src/app/**',
+        'src/proxy.ts',
+        'src/i18n/**',
+        // Typed re-exports of react-redux's hooks; no behaviour of their own.
+        'src/store/hooks.ts',
+      ],
       thresholds: { lines: 70 },
     },
   },
