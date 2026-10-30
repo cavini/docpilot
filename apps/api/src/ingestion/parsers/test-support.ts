@@ -1,0 +1,81 @@
+/** Escapes the characters that are special inside a PDF string literal. */
+function escapePdfText(text: string): string {
+  return text.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+}
+
+/**
+ * Builds a minimal, valid PDF containing the given pages of text.
+ *
+ * Written by hand rather than produced by a rendering library so that PDF
+ * fixtures are generated in the test rather than committed as opaque binaries
+ * a reviewer cannot read. Each page holds one line per entry, drawn in
+ * Helvetica, which is enough to exercise the one thing that matters here: that
+ * text comes back attributed to the right page.
+ *
+ * @param pages One entry per page; each entry is a list of lines.
+ * @returns The PDF's bytes.
+ *
+ * @example
+ * ```ts
+ * const bytes = buildPdf([['Authentication'], ['Rate limiting']]);
+ * ```
+ */
+export function buildPdf(pages: string[][]): Uint8Array {
+  const objects: string[] = [];
+  const pageObjectNumbers: number[] = [];
+
+  // 1 catalog, 2 page tree, 3 font, then two objects per page.
+  const fontObject = 3;
+  let next = 4;
+
+  for (const lines of pages) {
+    const contentObject = next + 1;
+    pageObjectNumbers.push(next);
+
+    objects[next] =
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] ` +
+      `/Contents ${String(contentObject)} 0 R ` +
+      `/Resources << /Font << /F1 ${String(fontObject)} 0 R >> >> >>`;
+
+    const drawn = lines
+      .map(
+        (line, index) =>
+          `BT /F1 12 Tf 72 ${String(720 - index * 18)} Td (${escapePdfText(line)}) Tj ET`,
+      )
+      .join('\n');
+
+    objects[contentObject] = `<< /Length ${String(drawn.length)} >>\nstream\n${drawn}\nendstream`;
+    next = contentObject + 1;
+  }
+
+  objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+  objects[2] =
+    `<< /Type /Pages /Kids [${pageObjectNumbers.map((n) => `${String(n)} 0 R`).join(' ')}] ` +
+    `/Count ${String(pages.length)} >>`;
+  objects[fontObject] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+
+  // A PDF's cross-reference table is byte offsets into the file, so the body
+  // has to be laid out before the table can be written.
+  let body = '%PDF-1.4\n';
+  const offsets: number[] = [];
+
+  for (let number = 1; number < next; number += 1) {
+    offsets[number] = body.length;
+    body += `${String(number)} 0 obj\n${objects[number] ?? '<< >>'}\nendobj\n`;
+  }
+
+  const xrefOffset = body.length;
+  const size = next;
+
+  let xref = `xref\n0 ${String(size)}\n0000000000 65535 f \n`;
+
+  for (let number = 1; number < size; number += 1) {
+    xref += `${String(offsets[number] ?? 0).padStart(10, '0')} 00000 n \n`;
+  }
+
+  const trailer =
+    `trailer\n<< /Size ${String(size)} /Root 1 0 R >>\n` +
+    `startxref\n${String(xrefOffset)}\n%%EOF\n`;
+
+  return new TextEncoder().encode(body + xref + trailer);
+}
