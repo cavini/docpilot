@@ -1,39 +1,21 @@
-import tseslint from 'typescript-eslint';
-
-import { baseConfig } from './base.js';
-
 /**
- * ESLint configuration for the NestJS applications.
+ * Rule overrides for the NestJS applications, applied on top of
+ * {@link baseConfig}. Exported as a bare layer so a single root config can
+ * scope it to the Nest workspaces with a `files` pattern.
  *
- * @param {string} tsconfigRootDir Directory holding the app `tsconfig.json`.
- * @returns {import('typescript-eslint').ConfigArray} Flat config array.
+ * @type {import('typescript-eslint').ConfigArray}
  */
-export function nestConfig(tsconfigRootDir) {
-  return tseslint.config(
-    baseConfig(tsconfigRootDir),
-    {
-      rules: {
-        // A Nest module is a class with only decorator metadata on it.
-        '@typescript-eslint/no-extraneous-class': 'off',
+export const nestOverrides = [
+  {
+    rules: {
+      // A Nest module is a class that carries only decorator metadata.
+      '@typescript-eslint/no-extraneous-class': 'off',
 
-        // Nest resolves `OnModuleInit` and request handlers through the
-        // framework, so a handler that returns a promise is normal.
-        '@typescript-eslint/no-floating-promises': [
-          'error',
-          { ignoreVoid: true },
-        ],
-      },
+      // Nest awaits lifecycle hooks and request handlers itself, so an
+      // explicitly voided promise is a deliberate fire-and-forget.
+      '@typescript-eslint/no-floating-promises': ['error', { ignoreVoid: true }],
     },
-    {
-      files: ['**/*.spec.ts', '**/test/**/*.ts'],
-      rules: {
-        // Test doubles routinely assert on shapes the compiler cannot prove.
-        '@typescript-eslint/unbound-method': 'off',
-        '@typescript-eslint/no-unsafe-assignment': 'off',
-        '@typescript-eslint/no-non-null-assertion': 'off',
-      },
-    },
-  );
-}
+  },
+];
 
-export default nestConfig;
+export default nestOverrides;

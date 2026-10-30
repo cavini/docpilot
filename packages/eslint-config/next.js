@@ -1,24 +1,22 @@
 import nextPlugin from '@next/eslint-plugin-next';
-import tseslint from 'typescript-eslint';
 
-import { reactConfig } from './react.js';
+import { reactOverrides } from './react.js';
 
 /**
- * ESLint configuration for the Next.js application: the React rules plus
- * Next's own checks for routing, images and fonts.
+ * The React rules plus Next's own checks for routing, images and fonts,
+ * applied on top of {@link baseConfig}.
  *
- * @param {string} tsconfigRootDir Directory holding the app `tsconfig.json`.
- * @returns {import('typescript-eslint').ConfigArray} Flat config array.
+ * @type {import('typescript-eslint').ConfigArray}
  */
-export function nextConfig(tsconfigRootDir) {
-  return tseslint.config(reactConfig(tsconfigRootDir), {
-    files: ['**/*.{ts,tsx}'],
+export const nextOverrides = [
+  ...reactOverrides,
+  {
     plugins: { '@next/next': nextPlugin },
     rules: {
       ...nextPlugin.configs.recommended.rules,
       ...nextPlugin.configs['core-web-vitals'].rules,
     },
-  });
-}
+  },
+];
 
-export default nextConfig;
+export default nextOverrides;
