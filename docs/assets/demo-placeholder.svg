@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img"
+     aria-label="Placeholder for the demo recording">
+  <rect width="960" height="360" rx="12" fill="#f4f5f7" stroke="#d8dbe0" stroke-width="2"/>
+  <text x="480" y="160" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="26" fill="#4a5059">Demo recording goes here</text>
+  <text x="480" y="202" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="16" fill="#767d87">Upload a document, ask a question, watch the cited answer stream in</text>
+  <text x="480" y="236" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="14" fill="#9aa1ab">Replaced in M9, once there is a deployed demo to record</text>
+</svg>

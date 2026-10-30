@@ -9,9 +9,10 @@ act on it through tools and MCP.
 
 > Live demo: _coming soon_
 
-<!-- TODO(docs): replace with a recording of upload, question, streamed cited answer. -->
+<!-- TODO(docs): replace with the real recording once there is a deployed demo.
+     Instructions are in docs/assets/README.md. -->
 
-![TODO: a recording of uploading a document, asking a question, and the answer streaming in with citations](./docs/assets/demo.gif)
+![Placeholder for the demo recording: uploading a document, asking a question, and the answer streaming in with citations](./docs/assets/demo-placeholder.svg)
 
 ## Why this exists
 
@@ -88,11 +89,11 @@ the web app talks only to the API. The reasoning is in
 | Monorepo        | pnpm workspaces + Turborepo                                                             | Shared contracts change with the code that uses them ([ADR 0001](./docs/adr/0001-monorepo-pnpm-turborepo.md))                   |
 | Language        | TypeScript 6, `strict` plus `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` | The compiler catches what tests would otherwise have to                                                                         |
 | Backend         | NestJS 12                                                                               | Modules, injection, guards and interceptors apply cross-cutting rules once ([ADR 0011](./docs/adr/0011-nestjs-only-backend.md)) |
-| Database        | PostgreSQL 17 + pgvector 0.8                                                            | Relational data, full-text search and vectors in one store ([ADR 0003](./docs/adr/))                                            |
+| Database        | PostgreSQL 17 + pgvector 0.8                                                            | Relational data, full-text search and vectors in one store (ADR 0003, written in M1)                                            |
 | ORM             | Drizzle                                                                                 | `vector` and `tsvector` are first-class, and the ranking SQL stays readable ([ADR 0002](./docs/adr/0002-orm-drizzle.md))        |
-| Queue and cache | Redis + BullMQ                                                                          | Retries, backoff and progress for ingestion ([ADR 0007](./docs/adr/))                                                           |
+| Queue and cache | Redis + BullMQ                                                                          | Retries, backoff and progress for ingestion (ADR 0007, written in M1)                                                           |
 | File storage    | S3 via the AWS SDK, LocalStack locally                                                  | The same code path runs locally and in production ([ADR 0008](./docs/adr/0008-s3-storage-with-localstack.md))                   |
-| LLM             | Vercel AI SDK 7                                                                         | Provider-agnostic, with mock models for tests ([ADR 0004](./docs/adr/))                                                         |
+| LLM             | Vercel AI SDK 7                                                                         | Provider-agnostic, with mock models for tests (ADR 0004, written in M2)                                                         |
 | Web             | Next.js 16 App Router, React 19                                                         | Server components where they help, client state where it is needed                                                              |
 | Web state       | Redux Toolkit + RTK Query                                                               | Typed, cached server state generated from the OpenAPI spec                                                                      |
 | Styling         | Tailwind CSS 4                                                                          | Theme lives in CSS, which suits Server Components                                                                               |
