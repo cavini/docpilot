@@ -86,14 +86,52 @@ export function baseConfig(tsconfigRootDir) {
       files: ['**/*.config.{js,ts,mjs,cjs}', '**/scripts/**/*.ts'],
       rules: { 'no-console': 'off' },
     },
-    {
-      // Config files sit outside every tsconfig `include`, so the project
-      // service cannot type them. They do not need type-aware rules either.
-      files: ['**/*.{js,mjs,cjs}', '**/*.config.{ts,mts,cts}'],
-      extends: [tseslint.configs.disableTypeChecked],
-    },
     prettier,
   );
 }
+
+/**
+ * Relaxations for test files.
+ *
+ * Test doubles are deliberately shaped like the thing they stand in for
+ * without being it, so the rules that protect production call sites get in the
+ * way here. Passing `logger.warn` to `expect()` is the common case: it is an
+ * unbound method reference on purpose. `no-explicit-any` stays on, because a
+ * test that needs `any` is usually a test asserting the wrong thing.
+ *
+ * @type {import('typescript-eslint').ConfigArray}
+ */
+export const testFileOverrides = tseslint.config({
+  files: [
+    '**/*.spec.{ts,tsx}',
+    '**/*.test.{ts,tsx}',
+    '**/test/**/*.{ts,tsx}',
+    '**/e2e/**/*.{ts,tsx}',
+    '**/cypress/**/*.{ts,tsx}',
+  ],
+  rules: {
+    '@typescript-eslint/unbound-method': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/no-unsafe-assignment': 'off',
+    '@typescript-eslint/no-unsafe-member-access': 'off',
+    '@typescript-eslint/no-unsafe-call': 'off',
+  },
+});
+
+/**
+ * Turns off type-aware rules for files no tsconfig includes: plain JavaScript,
+ * and the config files that live at a workspace root.
+ *
+ * Flat config applies layers in order, so this **must be the last layer** in
+ * the final config. Any scoped layer placed after it can re-enable a
+ * type-aware rule for a file the project service cannot type, which makes
+ * ESLint fail on the file rather than report a problem in it.
+ *
+ * @type {import('typescript-eslint').ConfigArray}
+ */
+export const untypedFileOverrides = tseslint.config({
+  files: ['**/*.{js,mjs,cjs}', '**/*.config.{ts,mts,cts}'],
+  extends: [tseslint.configs.disableTypeChecked],
+});
 
 export default baseConfig;

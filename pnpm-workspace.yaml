@@ -7,7 +7,17 @@ packages:
 # Keep this list short and add an entry only when a package genuinely needs to
 # compile a native or platform-specific binary at install time.
 onlyBuiltDependencies:
+  # Native file watcher used by `nest start --watch`; without it the CLI falls
+  # back to polling.
+  - '@parcel/watcher'
   - '@swc/core'
   - esbuild
   - sharp
   - unrs-resolver
+
+# tslib 2.9.1 is tagged `latest` on npm but its tarball returns 404, which
+# breaks any install that resolves the `^2.6.2` range the AWS SDK asks for.
+# Pinned to the last publish that actually downloads. Remove once upstream
+# republishes.
+overrides:
+  tslib: 2.8.1
