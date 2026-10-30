@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
 
 import { AppModule } from './app.module.js';
+import { loadDotenv } from './config/load-dotenv.js';
 import { loadEnv } from './config/load-env.js';
 import { startTracing } from './observability/tracing.js';
 
@@ -31,6 +32,9 @@ import { startTracing } from './observability/tracing.js';
  * configuration mistake worth failing on, rather than quietly idling.
  */
 async function bootstrap(): Promise<void> {
+  // Fills in anything the environment does not already provide.
+  loadDotenv();
+
   const env = loadEnv();
 
   await startTracing(env);

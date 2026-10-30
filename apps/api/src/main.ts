@@ -5,6 +5,7 @@ import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
 
 import { AppModule } from './app.module.js';
+import { loadDotenv } from './config/load-dotenv.js';
 import { loadEnv } from './config/load-env.js';
 import { startTracing } from './observability/tracing.js';
 import { SWAGGER_PATH, setupSwagger } from './swagger.js';
@@ -13,6 +14,9 @@ import { SWAGGER_PATH, setupSwagger } from './swagger.js';
 async function bootstrap(): Promise<void> {
   // Validated first, so a configuration mistake stops the process here with a
   // readable message rather than surfacing later as an undefined value.
+  // Fills in anything the environment does not already provide.
+  loadDotenv();
+
   const env = loadEnv();
 
   // Must run before the instrumented modules are constructed.

@@ -1,13 +1,11 @@
 import { defineConfig } from 'drizzle-kit';
 
+import { loadDotenv } from './src/config/load-dotenv';
+
 // drizzle-kit runs outside the Nest application, so it does not go through the
-// validated config. Read .env directly when one is present; CI and production
-// supply DATABASE_URL in the environment instead.
-try {
-  process.loadEnvFile('../../.env');
-} catch {
-  // No .env file. Fine when DATABASE_URL is already exported.
-}
+// validated config. The same .env rules apply: the real environment wins, and
+// a missing file is not an error.
+loadDotenv();
 
 const url = process.env.DATABASE_URL;
 
