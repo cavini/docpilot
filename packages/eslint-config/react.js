@@ -10,7 +10,10 @@ import globals from 'globals';
  * @type {import('typescript-eslint').ConfigArray}
  */
 export const reactOverrides = [
-  reactHooks.configs['recommended-latest'],
+  // react-hooks 7 keeps the flat configs under `configs.flat`; the top-level
+  // `configs.recommended-latest` is still the eslintrc shape and flat config
+  // rejects it.
+  reactHooks.configs.flat['recommended-latest'],
   jsxA11y.flatConfigs.recommended,
   {
     languageOptions: {

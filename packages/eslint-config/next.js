@@ -12,6 +12,9 @@ export const nextOverrides = [
   ...reactOverrides,
   {
     plugins: { '@next/next': nextPlugin },
+    // The plugin looks for a `pages` directory relative to this, and without
+    // it the rule searches the monorepo root and warns on every run.
+    settings: { next: { rootDir: 'apps/web' } },
     rules: {
       ...nextPlugin.configs.recommended.rules,
       ...nextPlugin.configs['core-web-vitals'].rules,
