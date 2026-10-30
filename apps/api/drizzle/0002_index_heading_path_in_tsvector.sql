@@ -1,0 +1,2 @@
+ALTER TABLE "chunks" drop column "tsv";--> statement-breakpoint
+ALTER TABLE "chunks" ADD COLUMN "tsv" "tsvector" GENERATED ALWAYS AS (to_tsvector(language, coalesce(heading_path, '') || ' ' || content)) STORED;

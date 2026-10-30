@@ -15,6 +15,13 @@
       "when": 1793398326486,
       "tag": "0001_documents_chunks_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793399829619,
+      "tag": "0002_index_heading_path_in_tsvector",
+      "breakpoints": true
     }
   ]
 }

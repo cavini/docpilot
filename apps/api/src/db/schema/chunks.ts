@@ -92,11 +92,19 @@ export const chunks = pgTable(
     /**
      * Lexemes for keyword search, maintained by Postgres.
      *
+     * Indexes the **heading path as well as the content**. A chunk's own text
+     * often never names the section it belongs to: the passage under
+     * "Authentication" starts "Call POST /auth/token…" and contains the word
+     * "authentication" nowhere, so a search for it found nothing until the
+     * heading was indexed alongside the body.
+     *
      * A generated column rather than something the application writes, so it
-     * cannot drift from `content`: there is no code path that updates one
-     * without the other.
+     * cannot drift from the columns it derives from: there is no code path
+     * that updates one without the other.
      */
-    tsv: tsvector().generatedAlwaysAs((): SQL => sql`to_tsvector(language, content)`),
+    tsv: tsvector().generatedAlwaysAs(
+      (): SQL => sql`to_tsvector(language, coalesce(heading_path, '') || ' ' || content)`,
+    ),
 
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
