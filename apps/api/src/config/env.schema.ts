@@ -22,7 +22,11 @@ const integerFromString = (defaultValue: number) =>
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-    LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+    // `silent` is a real pino level and is what the test suites use, so that
+    // a failing test's output is its own assertion rather than a wall of logs.
+    LOG_LEVEL: z
+      .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
+      .default('info'),
 
     // Transport
     API_PORT: integerFromString(3001),
