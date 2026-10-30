@@ -39,6 +39,10 @@ pnpm test:all      # every test level, in CI order
 A pre-commit hook runs ESLint and Prettier over staged files only. Run the full
 set before opening a pull request.
 
+`pnpm install` builds the shared packages and generates Next's route types
+first, because both lint and typecheck need them. That is why a fresh clone can
+run `pnpm lint` without building anything by hand.
+
 ## How a feature gets built
 
 Every feature follows the same loop: **spec, failing test, implementation,
