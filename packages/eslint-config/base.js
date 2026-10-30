@@ -91,6 +91,34 @@ export function baseConfig(tsconfigRootDir) {
 }
 
 /**
+ * Relaxations for test files.
+ *
+ * Test doubles are deliberately shaped like the thing they stand in for
+ * without being it, so the rules that protect production call sites get in the
+ * way here. Passing `logger.warn` to `expect()` is the common case: it is an
+ * unbound method reference on purpose. `no-explicit-any` stays on, because a
+ * test that needs `any` is usually a test asserting the wrong thing.
+ *
+ * @type {import('typescript-eslint').ConfigArray}
+ */
+export const testFileOverrides = tseslint.config({
+  files: [
+    '**/*.spec.{ts,tsx}',
+    '**/*.test.{ts,tsx}',
+    '**/test/**/*.{ts,tsx}',
+    '**/e2e/**/*.{ts,tsx}',
+    '**/cypress/**/*.{ts,tsx}',
+  ],
+  rules: {
+    '@typescript-eslint/unbound-method': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/no-unsafe-assignment': 'off',
+    '@typescript-eslint/no-unsafe-member-access': 'off',
+    '@typescript-eslint/no-unsafe-call': 'off',
+  },
+});
+
+/**
  * Turns off type-aware rules for files no tsconfig includes: plain JavaScript,
  * and the config files that live at a workspace root.
  *

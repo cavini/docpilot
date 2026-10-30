@@ -1,4 +1,4 @@
-import { baseConfig, untypedFileOverrides } from '@docpilot/eslint-config/base';
+import { baseConfig, testFileOverrides, untypedFileOverrides } from '@docpilot/eslint-config/base';
 import { nestOverrides } from '@docpilot/eslint-config/nest';
 import { nextOverrides } from '@docpilot/eslint-config/next';
 import { reactOverrides } from '@docpilot/eslint-config/react';
@@ -12,8 +12,9 @@ import tseslint from 'typescript-eslint';
  * workspace's own compiler options. Keeping one config also means the
  * pre-commit hook can lint a mixed set of staged files in a single pass.
  *
- * Layer order matters: `untypedFileOverrides` comes last so that no
- * workspace-scoped layer re-enables a type-aware rule for a config file.
+ * Layer order matters. The workspace-scoped layers come first, then the test
+ * relaxations, then `untypedFileOverrides` last, so that no earlier layer
+ * re-enables a type-aware rule for a file the project service cannot type.
  */
 export default tseslint.config(
   baseConfig(import.meta.dirname),
@@ -29,5 +30,6 @@ export default tseslint.config(
     files: ['apps/web/**/*.{ts,tsx}'],
     extends: nextOverrides,
   },
+  testFileOverrides,
   untypedFileOverrides,
 );
