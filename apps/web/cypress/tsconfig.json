@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    // Cypress's globals (`cy`, `Cypress`) are scoped to this folder, so they
+    // cannot leak into application code and make a typo compile.
+    "types": ["cypress", "node"]
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../src/**/*.ts", "../src/**/*.tsx"]
+}

@@ -9,3 +9,8 @@ playwright-report/
 test-results/
 pnpm-lock.yaml
 *.generated.ts
+
+# Generated contract artifacts. Reformatting them would make the "regenerate
+# and diff" check in CI fail on whitespace alone, every time.
+apps/api/openapi.json
+apps/api/schema.graphql

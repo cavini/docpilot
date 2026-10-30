@@ -18,7 +18,7 @@ const healthy: HealthResponse = {
 };
 
 /** Stubs the API response the component fetches through RTK Query. */
-function mockHealth(response: HealthResponse | { reject: true }) {
+function mockHealth(response: HealthResponse | { reject: true }, status = 200) {
   vi.stubGlobal(
     'fetch',
     vi.fn(() =>
@@ -26,7 +26,7 @@ function mockHealth(response: HealthResponse | { reject: true }) {
         ? Promise.reject(new Error('network down'))
         : Promise.resolve(
             new Response(JSON.stringify(response), {
-              status: 200,
+              status,
               headers: { 'content-type': 'application/json' },
             }),
           ),
@@ -85,7 +85,27 @@ describe('SystemStatus', () => {
     expect(screen.getAllByText('Operational')).toHaveLength(2);
   });
 
-  it('AC5: shows an actionable message when the API cannot be reached', async () => {
+  it('AC5: shows which dependency failed even when the API answers 503', async () => {
+    // The API returns 503 together with the full body. Rendering "unreachable"
+    // here would hide the one piece of information the reader needs.
+    mockHealth(
+      {
+        ...healthy,
+        status: 'down',
+        dependencies: { ...healthy.dependencies, redis: { status: 'down', error: 'refused' } },
+      },
+      503,
+    );
+
+    renderWithProviders(<SystemStatus />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Unavailable')).toHaveLength(2);
+    });
+    expect(screen.queryByText(/not reachable/)).not.toBeInTheDocument();
+  });
+
+  it('AC6: shows an actionable message when the API cannot be reached', async () => {
     mockHealth({ reject: true });
 
     renderWithProviders(<SystemStatus />);
@@ -95,7 +115,7 @@ describe('SystemStatus', () => {
     ).toBeInTheDocument();
   });
 
-  it('AC6: announces changes through a live region', async () => {
+  it('AC7: announces changes through a live region', async () => {
     mockHealth(healthy);
 
     const { container } = renderWithProviders(<SystemStatus />);
@@ -104,7 +124,7 @@ describe('SystemStatus', () => {
     expect(container.querySelector('[aria-live="polite"]')).not.toBeNull();
   });
 
-  it('AC7: hides the decorative status dot from assistive technology', async () => {
+  it('AC8: hides the decorative status dot from assistive technology', async () => {
     mockHealth(healthy);
 
     const { container } = renderWithProviders(<SystemStatus />);

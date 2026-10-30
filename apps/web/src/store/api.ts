@@ -23,7 +23,15 @@ export const docpilotApi = createApi({
   endpoints: (build) => ({
     // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- RTK Query uses `void` to mean the query takes no argument
     getHealth: build.query<HealthResponse, void>({
-      query: () => '/health',
+      query: () => ({
+        url: '/health',
+        // The API answers 503 when a dependency is down, and that response
+        // still carries the full body saying which one. Treating it as an
+        // error would throw away exactly the information the page exists to
+        // show, leaving the reader with "unreachable" when the API is in fact
+        // answering. A genuine transport failure still fails.
+        validateStatus: (response) => response.status === 200 || response.status === 503,
+      }),
       providesTags: ['Health'],
     }),
   }),
