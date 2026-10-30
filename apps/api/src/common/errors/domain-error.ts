@@ -49,6 +49,18 @@ export class InvalidRequestError extends DomainError {
   override readonly httpStatus = 400;
 }
 
+/**
+ * The request body is larger than the configured limit.
+ *
+ * Separate from {@link InvalidRequestError} because 413 tells a client
+ * something actionable that 400 does not: the request was understood and is
+ * simply too big, so retrying it unchanged will not help.
+ */
+export class PayloadTooLargeError extends DomainError {
+  override readonly code = 'payload_too_large';
+  override readonly httpStatus = 413;
+}
+
 /** The request conflicts with the current state, such as a duplicate upload. */
 export class ConflictError extends DomainError {
   override readonly code = 'conflict';
