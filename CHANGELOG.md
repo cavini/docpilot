@@ -7,6 +7,23 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added in M4
+
+- A tool-calling agent (`POST /agent`): the model chooses how to answer, in a
+  loop bounded by `AGENT_MAX_STEPS`.
+- Four tools — `search_docs`, `summarize_document` (map-reduce, with citations),
+  `extract_structured` (against a server-held schema registry) and
+  `create_ticket` (a mock tracker behind a real approval).
+- Approval before anything irreversible: the loop does not execute
+  `create_ticket` until the reader answers, and a denial is proved by counting
+  rows rather than by reading the model's reply.
+- Tool steps in the interface, collapsed, showing name, input, status and
+  output; an approval prompt that shows the whole proposal before asking.
+- `tickets` table, `AGENT_MAX_STEPS`, and `docs/agent-and-tools.md` with the
+  loop's sequence diagram including approval.
+- The mock provider is scripted to search once and then answer, so the tool step
+  is visible with no API key.
+
 ## [0.1.0] - 2026-10-31
 
 ### Added
