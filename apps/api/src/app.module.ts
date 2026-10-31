@@ -13,6 +13,7 @@ import { HealthModule } from './health/health.module.js';
 import { IngestionModule } from './ingestion/ingestion.module.js';
 import { RUN_WORKER } from './ingestion/worker.tokens.js';
 import { LlmModule } from './llm/llm.module.js';
+import { RetrievalModule } from './retrieval/retrieval.module.js';
 import { LoggerModule } from './observability/logger.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { StorageModule } from './storage/storage.module.js';
@@ -45,6 +46,7 @@ import { StorageModule } from './storage/storage.module.js';
     LlmModule,
     IngestionModule,
     DocumentsModule,
+    RetrievalModule,
   ],
 })
 export class AppModule {
