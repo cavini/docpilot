@@ -88,6 +88,28 @@ explicability.
 model call per result set. It is complementary rather than an alternative:
 rerank the fused list, not the raw ones. Behind `FF_RERANK` and measured in M7.
 
+## Consequences for how the queries are written
+
+Running the two searches separately turned out to have a cost that was not
+obvious when this was decided, and it is worth recording because it nearly went
+unnoticed.
+
+Both halves depend on an index that the natural way of writing the query quietly
+cannot use. The nearest-neighbour search loses the HNSW index if the `ready`
+filter is joined inside it; the keyword search loses the GIN index if the
+text-search configuration is read from the row rather than written as a
+constant. In both cases the rows returned are identical and only the plan
+changes, so nothing fails — the queries just stop being indexed.
+
+Both shipped wrong and were found by reading query plans, not by a failing test.
+The integration suite now asserts both plans. The detail is in
+[`rag-pipeline.md`](../rag-pipeline.md#two-searches-one-ranking).
+
+This is an argument _for_ the single-query alternative below that was not
+weighed at the time: one query would have one plan to get right rather than two.
+It does not change the decision, because the weighting problem is still the
+larger one, but it was a real cost paid.
+
 ## Consequences
 
 - A query is good at both paraphrases and exact identifiers, which is what a
