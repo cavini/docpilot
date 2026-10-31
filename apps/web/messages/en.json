@@ -23,5 +23,52 @@
     "label": "Language",
     "en": "English",
     "pt-BR": "Português (Brasil)"
+  },
+  "documents": {
+    "heading": "Documents",
+    "loading": "Loading documents…",
+    "uploading": "Uploading",
+    "retry": "Retry",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this document and its passages?",
+    "deleteConfirmYes": "Delete",
+    "cancel": "Cancel",
+    "chunks": "{count, plural, one {# passage} other {# passages}}",
+    "pages": "{count, plural, one {# page} other {# pages}}",
+    "progressLabel": "Ingesting {title}",
+    "failedWithoutReason": "Ingestion failed, with no reason reported.",
+    "duplicate": "{name} was already in the corpus, so the existing document was returned.",
+    "uploadFailed": "{name} could not be uploaded.",
+    "dropzone": {
+      "label": "Drop a document here, or choose one",
+      "hint": "PDF, Markdown or plain text, up to {limit} MB",
+      "inputLabel": "Choose a document to upload"
+    },
+    "rejected": {
+      "unsupportedType": "{name} is not a PDF, Markdown or text file.",
+      "tooLarge": "{name} is larger than the {limit} MB limit.",
+      "empty": "{name} is empty."
+    },
+    "empty": {
+      "title": "No documents yet",
+      "description": "Add a PDF, Markdown or text file and it becomes searchable in a few seconds."
+    },
+    "unreachable": {
+      "title": "The API is not reachable",
+      "description": "Start it with pnpm dev, then try again.",
+      "retry": "Try again"
+    },
+    "status": {
+      "queued": "Queued",
+      "parsing": "Parsing",
+      "chunking": "Chunking",
+      "embedding": "Embedding",
+      "ready": "Ready",
+      "failed": "Failed"
+    },
+    "language": {
+      "english": "English",
+      "portuguese": "Portuguese"
+    }
   }
 }
