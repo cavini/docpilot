@@ -46,7 +46,9 @@ async function bootstrap(): Promise<void> {
     );
   }
 
-  const app = await NestFactory.createApplicationContext(AppModule, { bufferLogs: true });
+  const app = await NestFactory.createApplicationContext(AppModule.forRoot({ runWorker: true }), {
+    bufferLogs: true,
+  });
 
   app.useLogger(app.get(Logger));
   app.flushLogs();

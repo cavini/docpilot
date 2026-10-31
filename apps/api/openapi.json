@@ -62,6 +62,178 @@
           "health"
         ]
       }
+    },
+    "/documents": {
+      "post": {
+        "operationId": "DocumentsController_upload",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "These bytes were already uploaded; the existing document is returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponseDto"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The document was accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Upload a PDF, Markdown or plain text document",
+        "tags": [
+          "documents"
+        ]
+      },
+      "get": {
+        "operationId": "DocumentsController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentPageDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List documents, newest first",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/documents/{id}": {
+      "get": {
+        "operationId": "DocumentsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read one document and its ingestion status",
+        "tags": [
+          "documents"
+        ]
+      },
+      "delete": {
+        "operationId": "DocumentsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The document is gone"
+          }
+        },
+        "summary": "Delete a document and everything derived from it",
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/documents/{id}/retry": {
+      "post": {
+        "operationId": "DocumentsController_retry",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reprocess a document that failed",
+        "tags": [
+          "documents"
+        ]
+      }
     }
   },
   "info": {
@@ -184,6 +356,117 @@
           "uptimeSeconds",
           "checkedAt",
           "dependencies"
+        ]
+      },
+      "DocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "description": "Display name, the filename without its extension.",
+            "example": "billing-api"
+          },
+          "sourceFilename": {
+            "type": "string",
+            "description": "The name the file was uploaded under.",
+            "example": "billing-api.pdf"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "application/pdf"
+          },
+          "sizeBytes": {
+            "type": "number",
+            "example": 418233
+          },
+          "status": {
+            "type": "string",
+            "description": "Where the document is in the pipeline.",
+            "enum": [
+              "queued",
+              "parsing",
+              "chunking",
+              "embedding",
+              "ready",
+              "failed"
+            ],
+            "example": "ready"
+          },
+          "progress": {
+            "type": "number",
+            "description": "How far through ingestion, from 0 to 100.",
+            "example": 100
+          },
+          "language": {
+            "type": "string",
+            "nullable": true,
+            "description": "Detected language, which decides the text-search stemmer.",
+            "enum": [
+              "english",
+              "portuguese"
+            ]
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why ingestion failed, when it did.",
+            "example": null
+          },
+          "pageCount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Pages, for formats that have them.",
+            "example": 12
+          },
+          "chunkCount": {
+            "type": "number",
+            "description": "Retrievable passages stored for this document.",
+            "example": 48
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-10-30T22:14:03.118Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-10-30T22:14:09.441Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "sourceFilename",
+          "mimeType",
+          "sizeBytes",
+          "status",
+          "progress",
+          "chunkCount",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "DocumentPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Pass back as `cursor` to fetch the next page. Null when this is the last.",
+            "example": "2026-10-30T22:14:03.118Z"
+          }
+        },
+        "required": [
+          "items"
         ]
       }
     }

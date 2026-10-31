@@ -5,7 +5,7 @@ import { type Pool } from 'pg';
 
 import { PG_POOL } from '../db/db.tokens.js';
 import { REDIS } from '../redis/redis.tokens.js';
-import { StorageProbe } from '../storage/storage-probe.service.js';
+import { StorageService } from '../storage/storage.service.js';
 import { runProbe } from './probe.js';
 
 /** Version reported by the health endpoint. */
@@ -23,7 +23,7 @@ export class HealthService {
   constructor(
     @Inject(PG_POOL) private readonly pool: Pool,
     @Inject(REDIS) private readonly redis: Redis,
-    private readonly storage: StorageProbe,
+    private readonly storage: StorageService,
   ) {}
 
   /**

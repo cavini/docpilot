@@ -21,6 +21,7 @@
     "db:generate": "pnpm --filter @docpilot/api db:generate",
     "db:migrate": "pnpm --filter @docpilot/api db:migrate",
     "db:studio": "pnpm --filter @docpilot/api db:studio",
+    "seed": "pnpm --filter @docpilot/api seed",
     "openapi:export": "pnpm --filter @docpilot/api openapi:export",
     "codegen": "pnpm --filter @docpilot/web typegen",
     "lint": "eslint .",

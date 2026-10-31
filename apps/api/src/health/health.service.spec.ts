@@ -1,7 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { PG_POOL } from '../db/db.tokens.js';
 import { REDIS } from '../redis/redis.tokens.js';
-import { StorageProbe } from '../storage/storage-probe.service.js';
+import { StorageService } from '../storage/storage.service.js';
 import { HealthService } from './health.service.js';
 
 interface Doubles {
@@ -22,7 +22,7 @@ async function createService(): Promise<{ service: HealthService; doubles: Doubl
       HealthService,
       { provide: PG_POOL, useValue: doubles.pool },
       { provide: REDIS, useValue: doubles.redis },
-      { provide: StorageProbe, useValue: doubles.storage },
+      { provide: StorageService, useValue: doubles.storage },
     ],
   }).compile();
 
