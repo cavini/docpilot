@@ -105,17 +105,30 @@ describe('ingestion progress over websockets (e2e)', () => {
     });
   });
 
-  it('AC2: pushes completion with the chunk count', async () => {
+  it('AC2: pushes completion with everything ingestion determined', async () => {
+    // Everything, because this event is the client's last word on the
+    // document: a field missing here leaves a row with a hole in it until
+    // something else happens to refetch.
     const socket = await connect();
     await subscribe(socket, [DOCUMENT_A]);
 
     const received = once<{ chunkCount: number }>(socket, INGESTION_EVENTS.completed);
     publish({
       type: 'completed',
-      payload: { documentId: DOCUMENT_A, status: 'ready', chunkCount: 7, pageCount: null },
+      payload: {
+        documentId: DOCUMENT_A,
+        status: 'ready',
+        chunkCount: 7,
+        pageCount: null,
+        language: 'english',
+      },
     });
 
-    await expect(received).resolves.toMatchObject({ chunkCount: 7, status: 'ready' });
+    await expect(received).resolves.toMatchObject({
+      chunkCount: 7,
+      status: 'ready',
+      language: 'english',
+    });
   });
 
   it('AC3: pushes a failure with its reason', async () => {

@@ -1,4 +1,5 @@
 import { type DocumentRow } from '../db/schema/index.js';
+import { type SupportedLanguage } from './parsers/language.js';
 
 /** Events the progress gateway pushes to subscribed clients. */
 export const INGESTION_EVENTS = {
@@ -20,6 +21,14 @@ export interface IngestionCompletedEvent {
   status: 'ready';
   chunkCount: number;
   pageCount: number | null;
+  /**
+   * Text-search configuration detected during ingestion.
+   *
+   * Carried here because this event is a client's last word on the document:
+   * everything ingestion determined has to be in it, or the client is left
+   * showing a row with a hole in it until something else happens to refetch.
+   */
+  language: SupportedLanguage;
 }
 
 /** A document failed. */

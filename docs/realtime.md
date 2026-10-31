@@ -67,11 +67,17 @@ to the whole corpus and be woken by all of it.
 
 ## Events
 
-| Event                 | Payload                                                  |
-| --------------------- | -------------------------------------------------------- |
-| `ingestion.progress`  | `{ documentId, status, progress }`                       |
-| `ingestion.completed` | `{ documentId, status: 'ready', chunkCount, pageCount }` |
-| `ingestion.failed`    | `{ documentId, status: 'failed', error }`                |
+| Event                 | Payload                                                            |
+| --------------------- | ------------------------------------------------------------------ |
+| `ingestion.progress`  | `{ documentId, status, progress }`                                 |
+| `ingestion.completed` | `{ documentId, status: 'ready', chunkCount, pageCount, language }` |
+| `ingestion.failed`    | `{ documentId, status: 'failed', error }`                          |
+
+`ingestion.completed` carries **everything ingestion determined**, not only what
+changed since the last progress tick. It is the client's last word on the
+document, so a field left out of it leaves the reader looking at a row with a
+hole in it until something unrelated happens to refetch — which is exactly what
+happened with `language` before it was added here.
 
 `status` is the pipeline stage: `parsing`, `chunking`, `embedding`. `progress`
 is a percentage.
