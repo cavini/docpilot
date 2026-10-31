@@ -488,6 +488,26 @@ to `llm_usage`. "What has this cost" is then a `SUM` over a table rather than a
 provider dashboard, and it is per endpoint, so an expensive feature is
 identifiable rather than merely suspected.
 
+### Streaming, and what changes
+
+`/chat` runs the same pipeline and streams the result. Three differences matter:
+
+- **Retrieval runs again for every question.** Reusing the first question's
+  passages for a follow-up would answer a different question confidently, which
+  is the failure this product exists to avoid.
+- **Previous turns are in the prompt**, newest first and never starting with an
+  assistant turn — an answer whose question was dropped reads as the model
+  asserting something unprompted, and models follow a malformed transcript
+  surprisingly literally. When turns are dropped for length the prompt says so,
+  so the model reports that it cannot see something rather than answering about
+  it anyway.
+- **The turn is persisted when the stream ends, however it ended.** A stopped or
+  failed answer is stored and marked as such: a partial answer is something the
+  reader read, and discarding it loses the context of whatever they ask next.
+
+The citations are sent **before** the text, because the passages are known
+before generation starts. See [`api.md`](./api.md#post-chat).
+
 ### Running with no provider
 
 `LLM_PROVIDER=mock` returns a canned answer with a real citation through the

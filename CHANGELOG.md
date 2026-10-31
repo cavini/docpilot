@@ -86,9 +86,27 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   whole list on every progress tick to apply a change the event already carried.
 - Specs for the whole milestone: `upload-ui`, `streaming-chat`,
   `citations-panel`, `i18n`.
+- Streaming answers (`POST /chat`) in a conversation that remembers previous
+  turns, with the conversation id and the citations sent as data parts in the
+  stream — the citations before any text, so the sources panel renders while the
+  answer is still being written.
+- `conversations` and `messages` tables, and `GET`/`DELETE /conversations`.
+  Citations are stored as a snapshot with the message, so an old conversation
+  still shows the evidence it was answered from after the document is deleted.
+- A chat interface: markers render as pressable citation chips, a side panel
+  shows the passage each came from, markdown is sanitised, and Escape returns
+  focus to the chip that opened the panel.
+- `docs/frontend.md`, and ADRs for the state split and for Tailwind.
 
 ### Fixed
 
+- The chat stream wrote its data parts before starting the message, so the
+  client attributed them to a message of their own and rendered an empty
+  assistant bubble above every answer.
+- The answer's markdown renderers were rebuilt on every render, which remounted
+  the whole subtree — replacing every citation chip with a new DOM node, so
+  closing the sources panel restored focus to an element no longer in the
+  document.
 - **The ingestion queue was never consumed, in any process.** `RUN_WORKER` was
   declared inside `IngestionModule`, and Nest resolves a provider from the
   module the consumer belongs to — so the processor always read that module's
