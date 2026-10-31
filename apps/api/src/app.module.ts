@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { type DynamicModule, Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
+import { ChatModule } from './chat/chat.module.js';
 import { CommonModule } from './common/common.module.js';
 import { ConfigModule } from './config/config.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
@@ -47,6 +48,7 @@ import { StorageModule } from './storage/storage.module.js';
     IngestionModule,
     DocumentsModule,
     RetrievalModule,
+    ChatModule,
   ],
 })
 export class AppModule {
