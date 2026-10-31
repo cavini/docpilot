@@ -1,6 +1,8 @@
 import { type HealthResponse } from '@docpilot/shared';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
+import { type DocumentPage, type DocumentSummary } from '../features/documents/document.types';
+
 /** Base URL of the Nest API. The web app never talks to anything else. */
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
@@ -19,7 +21,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 export const docpilotApi = createApi({
   reducerPath: 'docpilotApi',
   baseQuery: fetchBaseQuery({ baseUrl: API_URL }),
-  tagTypes: ['Health'],
+  tagTypes: ['Health', 'Document'],
   endpoints: (build) => ({
     // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- RTK Query uses `void` to mean the query takes no argument
     getHealth: build.query<HealthResponse, void>({
@@ -34,7 +36,64 @@ export const docpilotApi = createApi({
       }),
       providesTags: ['Health'],
     }),
+
+    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- RTK Query uses `void` to mean the query takes no argument
+    listDocuments: build.query<DocumentPage, void>({
+      query: () => ({ url: '/documents', params: { limit: 50 } }),
+      // One tag per document plus a list tag. An upload invalidates the list;
+      // a socket event patches one row without refetching the whole page.
+      providesTags: (page) => [
+        { type: 'Document' as const, id: 'LIST' },
+        ...(page?.items ?? []).map((document) => ({
+          type: 'Document' as const,
+          id: document.id,
+        })),
+      ],
+    }),
+
+    uploadDocument: build.mutation<{ document: DocumentSummary; duplicate: boolean }, File>({
+      query: (file) => {
+        const body = new FormData();
+        body.append('file', file);
+
+        return {
+          url: '/documents',
+          method: 'POST',
+          body,
+          // 200 means these bytes were already held and the existing document
+          // came back. That is a success the reader should be told about, not
+          // an error — so both statuses pass, and the caller distinguishes
+          // them rather than the transport layer.
+          validateStatus: (response) => response.status === 201 || response.status === 200,
+          responseHandler: async (response) => ({
+            document: (await response.json()) as DocumentSummary,
+            duplicate: response.status === 200,
+          }),
+        };
+      },
+      invalidatesTags: [{ type: 'Document', id: 'LIST' }],
+    }),
+
+    retryDocument: build.mutation<DocumentSummary, string>({
+      query: (id) => ({ url: `/documents/${id}/retry`, method: 'POST' }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: 'Document', id },
+        { type: 'Document', id: 'LIST' },
+      ],
+    }),
+
+    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- a 204 has no body, and `void` is how RTK Query spells that
+    deleteDocument: build.mutation<void, string>({
+      query: (id) => ({ url: `/documents/${id}`, method: 'DELETE' }),
+      invalidatesTags: [{ type: 'Document', id: 'LIST' }],
+    }),
   }),
 });
 
-export const { useGetHealthQuery } = docpilotApi;
+export const {
+  useGetHealthQuery,
+  useListDocumentsQuery,
+  useUploadDocumentMutation,
+  useRetryDocumentMutation,
+  useDeleteDocumentMutation,
+} = docpilotApi;

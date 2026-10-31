@@ -23,5 +23,52 @@
     "label": "Idioma",
     "en": "English",
     "pt-BR": "Português (Brasil)"
+  },
+  "documents": {
+    "heading": "Documentos",
+    "loading": "Carregando documentos…",
+    "uploading": "Enviando",
+    "retry": "Tentar de novo",
+    "delete": "Excluir",
+    "deleteConfirm": "Excluir este documento e seus trechos?",
+    "deleteConfirmYes": "Excluir",
+    "cancel": "Cancelar",
+    "chunks": "{count, plural, one {# trecho} other {# trechos}}",
+    "pages": "{count, plural, one {# página} other {# páginas}}",
+    "progressLabel": "Processando {title}",
+    "failedWithoutReason": "O processamento falhou, sem motivo informado.",
+    "duplicate": "{name} já estava no acervo, então o documento existente foi retornado.",
+    "uploadFailed": "Não foi possível enviar {name}.",
+    "dropzone": {
+      "label": "Arraste um documento aqui, ou escolha um",
+      "hint": "PDF, Markdown ou texto, até {limit} MB",
+      "inputLabel": "Escolher um documento para enviar"
+    },
+    "rejected": {
+      "unsupportedType": "{name} não é um arquivo PDF, Markdown ou de texto.",
+      "tooLarge": "{name} passa do limite de {limit} MB.",
+      "empty": "{name} está vazio."
+    },
+    "empty": {
+      "title": "Nenhum documento ainda",
+      "description": "Envie um PDF, Markdown ou arquivo de texto e ele fica pesquisável em segundos."
+    },
+    "unreachable": {
+      "title": "A API não está acessível",
+      "description": "Inicie com pnpm dev e tente de novo.",
+      "retry": "Tentar de novo"
+    },
+    "status": {
+      "queued": "Na fila",
+      "parsing": "Analisando",
+      "chunking": "Dividindo",
+      "embedding": "Vetorizando",
+      "ready": "Pronto",
+      "failed": "Falhou"
+    },
+    "language": {
+      "english": "Inglês",
+      "portuguese": "Português"
+    }
   }
 }
