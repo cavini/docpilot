@@ -6,7 +6,7 @@ import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
 import { AssistantMessage } from './assistant-message';
 import { CitationsPanel } from './citations-panel';
-import { citationsOf, textOf, useDocpilotChat } from './use-docpilot-chat';
+import { type ChatMode, citationsOf, textOf, useDocpilotChat } from './use-docpilot-chat';
 
 /** Which answer's sources are open, and which of them is focused. */
 interface OpenSources {
@@ -30,7 +30,9 @@ interface OpenSources {
  */
 export function ChatView(): ReactNode {
   const t = useTranslations('chat');
-  const { messages, status, error, ask, stop, reset, retry } = useDocpilotChat();
+  const [mode, setMode] = useState<ChatMode>('chat');
+  const { messages, status, error, ask, stop, reset, retry, answerApproval } =
+    useDocpilotChat(mode);
   const [question, setQuestion] = useState('');
   const [open, setOpen] = useState<OpenSources | null>(null);
   const transcript = useRef<HTMLDivElement | null>(null);
@@ -67,18 +69,38 @@ export function ChatView(): ReactNode {
           <h2 id="chat-heading" className="text-content text-lg font-semibold">
             {t('heading')}
           </h2>
-          {messages.length === 0 ? null : (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setOpen(null);
-                reset();
-              }}
-            >
-              {t('newConversation')}
-            </Button>
-          )}
+          <div className="flex items-center gap-3">
+            {/*
+              A checkbox rather than two endpoints behind two buttons: the
+              question is the same either way, and what changes is whether the
+              model may reach for a tool to answer it.
+            */}
+            <label className="text-content-muted flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={mode === 'agent'}
+                disabled={busy}
+                onChange={(event) => {
+                  setMode(event.target.checked ? 'agent' : 'chat');
+                }}
+                className="accent-accent"
+              />
+              {t('useTools')}
+            </label>
+
+            {messages.length === 0 ? null : (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setOpen(null);
+                  reset();
+                }}
+              >
+                {t('newConversation')}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/*
@@ -107,7 +129,11 @@ export function ChatView(): ReactNode {
               {message.role === 'user' ? (
                 textOf(message)
               ) : (
-                <AssistantMessage message={message} onCite={openCitations} />
+                <AssistantMessage
+                  message={message}
+                  onCite={openCitations}
+                  onApproval={answerApproval}
+                />
               )}
             </MessageBubble>
           ))}

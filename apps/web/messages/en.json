@@ -93,6 +93,30 @@
       "close": "Close sources",
       "page": "Page {page}",
       "pageRange": "Pages {from}–{to}"
+    },
+    "useTools": "Use tools"
+  },
+  "agent": {
+    "status": {
+      "running": "Running",
+      "done": "Done",
+      "failed": "Failed",
+      "awaiting-approval": "Needs your approval",
+      "denied": "Declined"
+    },
+    "toggle": "Show what {tool} did",
+    "input": "Input",
+    "output": "Output",
+    "approval": {
+      "question": "Create this ticket?",
+      "approve": "Create it",
+      "deny": "No, thanks"
+    },
+    "ticket": {
+      "title": "Title",
+      "body": "Body",
+      "labels": "Labels",
+      "unreadable": "The assistant proposed something that is not a ticket. Decline it."
     }
   }
 }

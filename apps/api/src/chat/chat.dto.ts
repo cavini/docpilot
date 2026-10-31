@@ -13,6 +13,14 @@ import {
 /** Most documents a single question may be restricted to. */
 const MAX_DOCUMENT_FILTER = 50;
 
+/**
+ * Most messages a resumed turn may carry.
+ *
+ * A turn is one question and the steps it took, not a whole conversation, so
+ * this is generous. The bound exists because the array is client-supplied.
+ */
+const MAX_RESUME_MESSAGES = 50;
+
 /** Body of `POST /chat`. */
 export class ChatRequestDto {
   /** The question to answer. */
@@ -41,6 +49,28 @@ export class ChatRequestDto {
   @ArrayMaxSize(MAX_DOCUMENT_FILTER)
   @IsUUID('4', { each: true })
   documentIds?: string[];
+
+  /**
+   * The turn so far, when resuming one that paused for approval.
+   *
+   * `/agent` only. Sent by the AI SDK client when it answers an approval,
+   * because that answer lives inside the message parts and there is nowhere
+   * else to carry it.
+   *
+   * Used **only** to resume the paused tool loop. The conversation's own
+   * history still comes from the server's store, so a client cannot rewrite
+   * what was said by editing this — the worst it can do is mis-resume its own
+   * in-flight turn.
+   */
+  @ApiPropertyOptional({
+    type: 'array',
+    items: { type: 'object', additionalProperties: true },
+    description: 'The turn so far, when resuming one that paused for approval.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(MAX_RESUME_MESSAGES)
+  messages?: unknown[];
 }
 
 /** One turn in a stored conversation. */

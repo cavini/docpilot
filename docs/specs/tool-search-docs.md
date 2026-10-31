@@ -1,6 +1,6 @@
 # Spec: `search_docs`
 
-Status: accepted Milestone: M4
+Status: implemented Milestone: M4
 
 ## Problem and goal
 

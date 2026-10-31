@@ -93,6 +93,30 @@
       "close": "Fechar fontes",
       "page": "Página {page}",
       "pageRange": "Páginas {from}–{to}"
+    },
+    "useTools": "Usar ferramentas"
+  },
+  "agent": {
+    "status": {
+      "running": "Executando",
+      "done": "Concluído",
+      "failed": "Falhou",
+      "awaiting-approval": "Precisa da sua aprovação",
+      "denied": "Recusado"
+    },
+    "toggle": "Mostrar o que {tool} fez",
+    "input": "Entrada",
+    "output": "Saída",
+    "approval": {
+      "question": "Criar este chamado?",
+      "approve": "Criar",
+      "deny": "Não, obrigado"
+    },
+    "ticket": {
+      "title": "Título",
+      "body": "Descrição",
+      "labels": "Etiquetas",
+      "unreadable": "O assistente propôs algo que não é um chamado. Recuse."
     }
   }
 }

@@ -1,7 +1,11 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport, type UIMessage } from 'ai';
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithApprovalResponses,
+  type UIMessage,
+} from 'ai';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { type Citation } from './citation.types';
@@ -44,6 +48,9 @@ export function citationsOf(message: UIMessage): Citation[] {
   return message.parts.filter(isCitationsPart).flatMap((part) => part.data.citations);
 }
 
+/** Which endpoint a turn goes to. */
+export type ChatMode = 'chat' | 'agent';
+
 /** What the hook gives the chat view. */
 export interface DocpilotChat {
   messages: UIMessage[];
@@ -59,6 +66,13 @@ export interface DocpilotChat {
   reset: () => void;
   /** Re-asks the last question after a failure. */
   retry: () => void;
+  /**
+   * Answers an outstanding approval request.
+   *
+   * Continues the same stream rather than starting a new turn, which is what
+   * lets the model carry on from where it paused.
+   */
+  answerApproval: (id: string, approved: boolean) => void;
 }
 
 /**
@@ -82,7 +96,10 @@ export interface DocpilotChat {
  * const { messages, ask, stop, status } = useDocpilotChat();
  * ```
  */
-export function useDocpilotChat(documentIds?: readonly string[]): DocpilotChat {
+export function useDocpilotChat(
+  mode: ChatMode = 'chat',
+  documentIds?: readonly string[],
+): DocpilotChat {
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   /**
@@ -94,15 +111,22 @@ export function useDocpilotChat(documentIds?: readonly string[]): DocpilotChat {
    * only from callbacks and effects and read only when a request is being
    * prepared, keeps them current without rebuilding the transport each render.
    */
-  const outgoing = useRef<{ conversationId: string | null; documentIds: readonly string[] }>({
+  const outgoing = useRef<{
+    conversationId: string | null;
+    documentIds: readonly string[];
+    mode: ChatMode;
+    /** The question this turn is answering, for resuming after an approval. */
+    lastQuestion: string | null;
+  }>({
     conversationId: null,
     documentIds: documentIds ?? [],
+    mode,
+    lastQuestion: null,
   });
-  const lastQuestion = useRef<string | null>(null);
-
   useEffect(() => {
     outgoing.current.documentIds = documentIds ?? [];
-  }, [documentIds]);
+    outgoing.current.mode = mode;
+  }, [documentIds, mode]);
 
   /*
    * `react-hooks/refs` reads a `useMemo` factory as render-phase code, so it
@@ -119,16 +143,38 @@ export function useDocpilotChat(documentIds?: readonly string[]): DocpilotChat {
     () =>
       new DefaultChatTransport<UIMessage>({
         api: `${API_URL}/chat`,
-        prepareSendMessagesRequest: ({ messages }) => {
-          const { conversationId: conversation, documentIds: documents } = outgoing.current;
+        prepareSendMessagesRequest: ({ messages, trigger }) => {
+          const {
+            conversationId: conversation,
+            documentIds: documents,
+            mode: current,
+            lastQuestion: asked,
+          } = outgoing.current;
           const latest = messages.at(-1);
           const question = latest?.role === 'user' ? textOf(latest) : '';
 
+          /*
+           * A turn that paused for approval resumes rather than starting
+           * over, and the reader's answer lives inside the message parts -
+           * the SDK puts it there and there is nowhere else to carry it. So
+           * the messages go with it, but only then.
+           *
+           * The rest of the time the body is the question alone: the server
+           * holds the conversation, and sending the transcript back every
+           * turn would let a client rewrite its own history.
+           */
+          const resuming = trigger === 'submit-message' && latest?.role === 'assistant';
+
           return {
+            // The two endpoints take the same request and return the same
+            // stream, so switching between them is a path rather than a
+            // second transport.
+            api: `${API_URL}/${current}`,
             body: {
-              question,
+              question: resuming ? (asked ?? '') : question,
               ...(conversation === null ? {} : { conversationId: conversation }),
               ...(documents.length === 0 ? {} : { documentIds: [...documents] }),
+              ...(resuming ? { messages } : {}),
             },
           };
         },
@@ -139,6 +185,15 @@ export function useDocpilotChat(documentIds?: readonly string[]): DocpilotChat {
 
   const chat = useChat({
     transport,
+    /*
+     * Sends the turn on once every outstanding approval has been answered.
+     *
+     * `addToolApprovalResponse` only records the answer in the message state;
+     * without this nothing is posted and the model waits for ever. The first
+     * version of this had no trigger, and the symptom was an approval dialog
+     * that accepted a click and then did nothing at all.
+     */
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onData: (part) => {
       if (isConversationPart(part)) {
         outgoing.current.conversationId = part.data.conversationId;
@@ -147,7 +202,7 @@ export function useDocpilotChat(documentIds?: readonly string[]): DocpilotChat {
     },
   });
 
-  const { sendMessage, setMessages } = chat;
+  const { addToolApprovalResponse, sendMessage, setMessages } = chat;
 
   const ask = useCallback(
     (question: string): void => {
@@ -157,7 +212,7 @@ export function useDocpilotChat(documentIds?: readonly string[]): DocpilotChat {
         return;
       }
 
-      lastQuestion.current = trimmed;
+      outgoing.current.lastQuestion = trimmed;
       void sendMessage({ text: trimmed });
     },
     [sendMessage],
@@ -172,14 +227,23 @@ export function useDocpilotChat(documentIds?: readonly string[]): DocpilotChat {
 
   const reset = useCallback((): void => {
     outgoing.current.conversationId = null;
-    lastQuestion.current = null;
+    outgoing.current.lastQuestion = null;
     setConversationId(null);
     setMessages([]);
   }, [setMessages]);
 
+  const answerApproval = useCallback(
+    (id: string, approved: boolean): void => {
+      void addToolApprovalResponse({ id, approved });
+    },
+    [addToolApprovalResponse],
+  );
+
   const retry = useCallback((): void => {
-    if (lastQuestion.current !== null) {
-      void sendMessage({ text: lastQuestion.current });
+    const asked = outgoing.current.lastQuestion;
+
+    if (asked !== null) {
+      void sendMessage({ text: asked });
     }
   }, [sendMessage]);
 
@@ -192,5 +256,6 @@ export function useDocpilotChat(documentIds?: readonly string[]): DocpilotChat {
     stop,
     reset,
     retry,
+    answerApproval,
   };
 }
