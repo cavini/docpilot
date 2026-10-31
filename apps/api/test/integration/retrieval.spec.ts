@@ -3,8 +3,15 @@ import { resolve } from 'node:path';
 
 import { type Job } from 'bullmq';
 
+import { type SQL, sql } from 'drizzle-orm';
+
 import { type IngestionJobData } from '../../src/ingestion/ingestion.constants.js';
-import { documents } from '../../src/db/schema/index.js';
+import { chunks, documents } from '../../src/db/schema/index.js';
+import {
+  keywordMatch,
+  toVectorLiteral,
+  vectorSearchQuery,
+} from '../../src/retrieval/retrieval.sql.js';
 import { RetrievalService } from '../../src/retrieval/retrieval.service.js';
 import { EMBEDDING_FIXTURE_PATH } from '../../src/scripts/recorded.constants.js';
 import {
@@ -155,6 +162,59 @@ describe('hybrid retrieval against real infrastructure', () => {
     for (const result of results) {
       expect(result.vectorRank !== null || result.keywordRank !== null).toBe(true);
     }
+  }, 60_000);
+
+  /**
+   * Returns the query plan for `query`, with sequential scans disabled.
+   *
+   * These tests exist because a lost index is invisible to every other test:
+   * the rows come back identical and only the plan changes. Both of the bugs
+   * they guard were real and shipped.
+   *
+   * `enable_seqscan = off` makes the planner prefer any usable index, so a
+   * sequential scan in the plan means no index *could* serve the query, rather
+   * than that the planner judged a few dozen rows not worth a lookup. It has
+   * to be `set local` inside a transaction: on a pooled connection a session
+   * `set` would leak into whatever runs next, and `set local` outside a
+   * transaction does nothing at all.
+   */
+  async function planFor(query: SQL): Promise<string> {
+    return harness.db.transaction(async (tx) => {
+      await tx.execute(sql`set local enable_seqscan = off`);
+      const rows = await tx.execute(sql`explain (costs off) ${query}`);
+
+      return JSON.stringify(rows.rows);
+    });
+  }
+
+  it('reaches the nearest neighbours through the HNSW index', async () => {
+    // The approximate search has to run on `chunks` alone. With the join to
+    // `documents` inside it, Postgres materialises the join and sorts,
+    // abandoning the index while returning exactly the same rows.
+    const [row] = await harness.db.select({ embedding: chunks.embedding }).from(chunks).limit(1);
+
+    expect(row?.embedding).toBeDefined();
+
+    const plan = await planFor(
+      vectorSearchQuery(toVectorLiteral(row?.embedding ?? []), undefined, 5),
+    );
+
+    expect(plan).toContain('chunks_embedding_hnsw_idx');
+  }, 60_000);
+
+  it('matches keywords through the GIN index', async () => {
+    // Two ways this breaks, and both of them did. A migration that replaces
+    // the generated `tsv` column drops the index along with it; and building
+    // the tsquery from `c.language` makes the operand vary per row, so there
+    // is no key to probe and the match is evaluated on every chunk.
+    //
+    // The predicate is planned against `chunks` alone rather than through the
+    // whole search, because with the join present the planner may reasonably
+    // drive from `documents` instead — which is a judgement about corpus size,
+    // not about whether this predicate can use the index.
+    const plan = await planFor(sql`select c.id from chunks c where ${keywordMatch('token')}`);
+
+    expect(plan).toContain('chunks_tsv_idx');
   }, 60_000);
 
   // Last in the block on purpose: it ingests a document, so it must not change
