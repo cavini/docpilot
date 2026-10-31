@@ -4,6 +4,7 @@ import { type UIMessage } from 'ai';
 import { type ReactNode, useCallback, useMemo } from 'react';
 
 import { Answer } from './answer';
+import { ToolSteps } from './tool-steps';
 import { citationsOf, textOf } from './use-docpilot-chat';
 
 /** Props accepted by {@link AssistantMessage}. */
@@ -11,6 +12,8 @@ export interface AssistantMessageProps {
   message: UIMessage;
   /** Called with the message and the citation number whose chip was pressed. */
   onCite: (messageId: string, n: number) => void;
+  /** Answers an outstanding approval request. */
+  onApproval: (id: string, approved: boolean) => void;
 }
 
 /**
@@ -26,7 +29,11 @@ export interface AssistantMessageProps {
  * DOM node, so restoring focus to "the chip that opened the panel" lands on an
  * element no longer in the document.
  */
-export function AssistantMessage({ message, onCite }: AssistantMessageProps): ReactNode {
+export function AssistantMessage({
+  message,
+  onCite,
+  onApproval,
+}: AssistantMessageProps): ReactNode {
   const text = useMemo(() => textOf(message), [message]);
   const citations = useMemo(() => citationsOf(message), [message]);
 
@@ -37,5 +44,10 @@ export function AssistantMessage({ message, onCite }: AssistantMessageProps): Re
     [message.id, onCite],
   );
 
-  return <Answer text={text} citations={citations} onCite={cite} />;
+  return (
+    <>
+      <ToolSteps message={message} onApproval={onApproval} />
+      {text === '' ? null : <Answer text={text} citations={citations} onCite={cite} />}
+    </>
+  );
 }
