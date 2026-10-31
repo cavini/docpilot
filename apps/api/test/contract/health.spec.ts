@@ -8,6 +8,16 @@ import { AppModule } from '../../src/app.module.js';
 import { buildOpenApiDocument } from '../../src/swagger.js';
 import { describeErrors, openApiDocument, responseValidator } from './openapi-validator.js';
 
+/**
+ * Contract tests carry no `ACn` prefixes, unlike every other level.
+ *
+ * What they assert is a property of the whole published spec — that every
+ * route is in it, that every documented path exists, and that real responses
+ * validate against the schemas clients are generated from. That cuts across
+ * features rather than belonging to one criterion, and a local `AC3` here
+ * would collide with a different `AC3` in a feature spec, breaking the one
+ * thing the numbering is for: `grep -r AC3` finding the test that proves it.
+ */
 describe('API responses match the published contract', () => {
   let app: INestApplication;
 
@@ -22,7 +32,7 @@ describe('API responses match the published contract', () => {
     await app.close();
   });
 
-  it('AC1: the committed spec documents every route the application exposes', () => {
+  it('documents every route the application exposes', () => {
     const live = Object.keys(buildOpenApiDocument(app).paths).sort();
     const committed = Object.keys(openApiDocument.paths).sort();
 
@@ -39,7 +49,7 @@ describe('API responses match the published contract', () => {
     expect(live).toStrictEqual(committed);
   });
 
-  it('AC2: GET /health matches its documented 200 response', async () => {
+  it('GET /health matches its documented 200 response', async () => {
     const validate = responseValidator('/health', 'get', '200');
     const { body } = await request(httpServer(app)).get('/health').expect(200);
 
@@ -48,7 +58,7 @@ describe('API responses match the published contract', () => {
     expect(valid || describeErrors(validate)).toBe(true);
   });
 
-  it('AC3: the spec rejects a response missing a required field', () => {
+  it('rejects a response missing a required field', () => {
     const validate = responseValidator('/health', 'get', '200');
 
     // Guards the guard: if the schema accepted anything, AC2 would pass while
@@ -56,7 +66,7 @@ describe('API responses match the published contract', () => {
     expect(validate({ status: 'ok' })).toBe(false);
   });
 
-  it('AC4: the spec rejects an unknown status value', () => {
+  it('rejects an unknown status value', () => {
     const validate = responseValidator('/health', 'get', '200');
 
     expect(
@@ -74,7 +84,7 @@ describe('API responses match the published contract', () => {
     ).toBe(false);
   });
 
-  it('AC5: every documented path is reachable, so the spec has no dead entries', async () => {
+  it('leaves no dead entries: every documented path is reachable', async () => {
     const server = httpServer(app);
 
     for (const path of ['/health', '/health/live', '/feature-flags']) {

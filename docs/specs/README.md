@@ -20,6 +20,13 @@ So `grep -r AC3` finds the test that proves it. A reviewer can read the spec and
 confirm each line is actually enforced, rather than inferring it from a coverage
 percentage.
 
+**Contract tests are the exception** and carry no numbers. What they assert is a
+property of the published OpenAPI document — every route documented, every
+documented route reachable, real responses valid against the schemas clients are
+generated from. That cuts across features, and a local `AC3` in a contract file
+would collide with a different `AC3` in a feature spec, breaking exactly the
+lookup the numbering exists for.
+
 ## Status
 
 - `draft` — being written or discussed; the code does not exist yet.
