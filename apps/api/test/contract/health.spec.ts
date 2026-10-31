@@ -22,7 +22,9 @@ describe('API responses match the published contract', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule.forRoot({ runWorker: false })],
+    }).compile();
 
     app = moduleRef.createNestApplication();
     await app.init();

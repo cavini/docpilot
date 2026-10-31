@@ -7,7 +7,8 @@
  * and the worker consumes, and no environment variable alone can distinguish
  * the two processes.
  *
- * Defaults to `false`, so a test that builds the application does not get a
- * background worker racing it for the jobs it is about to process by hand.
+ * Provided globally by {@link WorkerModeModule}, which `AppModule.forRoot`
+ * installs. There is no default: a module tree without it fails to start,
+ * rather than booting a worker that never consumes.
  */
 export const RUN_WORKER = Symbol('DOCPILOT_RUN_WORKER');

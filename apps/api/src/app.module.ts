@@ -12,7 +12,7 @@ import { ENV } from './config/env.tokens.js';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module.js';
 import { HealthModule } from './health/health.module.js';
 import { IngestionModule } from './ingestion/ingestion.module.js';
-import { RUN_WORKER } from './ingestion/worker.tokens.js';
+import { WorkerModeModule } from './ingestion/worker-mode.module.js';
 import { LlmModule } from './llm/llm.module.js';
 import { RetrievalModule } from './retrieval/retrieval.module.js';
 import { LoggerModule } from './observability/logger.module.js';
@@ -59,15 +59,18 @@ export class AppModule {
    * differently, which no environment variable alone can express: with
    * `WORKER_MODE=separate`, the API enqueues and the worker consumes.
    *
-   * Importing `AppModule` directly, as the tests do, gets a process that does
-   * not consume.
+   * This is the **only** supported way to build the application. Importing
+   * `AppModule` bare leaves `RUN_WORKER` unprovided and fails at startup,
+   * which is deliberate: the previous arrangement let a bare import boot
+   * cleanly and never consume a job, and a loud failure is worth more than a
+   * silent one.
    *
    * @param options Whether to run the ingestion worker here.
    */
   static forRoot(options: { runWorker: boolean }): DynamicModule {
     return {
       module: AppModule,
-      providers: [{ provide: RUN_WORKER, useValue: options.runWorker }],
+      imports: [WorkerModeModule.forRoot(options.runWorker)],
     };
   }
 }
