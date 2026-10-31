@@ -1,6 +1,6 @@
 # Spec: `summarize_document`
 
-Status: accepted Milestone: M4
+Status: implemented Milestone: M4
 
 ## Problem and goal
 
