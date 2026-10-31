@@ -107,6 +107,13 @@ export class ChatService {
 
     return createUIMessageStream({
       execute: async ({ writer }) => {
+        // The message has to be started before anything is written into it.
+        // Data parts written ahead of a `start` chunk belong to no message, so
+        // the client opens one for them and a second for the text — which
+        // renders as an empty assistant bubble above the real answer. The
+        // merged stream below is told not to send its own start.
+        writer.write({ type: 'start' });
+
         writer.write({
           type: STREAM_PARTS.conversation,
           data: { conversationId: conversation.id },
@@ -183,6 +190,8 @@ export class ChatService {
         writer.merge(
           toUIMessageStream({
             stream: result.stream,
+            // Already sent above, before the citations.
+            sendStart: false,
             onError: (error: unknown) => {
               this.logger.warn(
                 { err: error, conversationId: conversation.id },

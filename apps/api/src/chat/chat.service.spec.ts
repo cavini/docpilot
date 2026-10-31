@@ -117,6 +117,23 @@ describe('ChatService', () => {
     });
   });
 
+  it('opens exactly one message, with the data parts inside it', async () => {
+    // Data parts written before a `start` chunk belong to no message, so the
+    // client opens one for them and another for the text — which renders as an
+    // empty assistant bubble above the real answer. Caught in a browser, not
+    // by any assertion that existed at the time.
+    const { service } = createService();
+
+    const chunks = await drain(await service.stream({ question: 'q' }));
+    const startAt = chunks.findIndex((part) => part.type === 'start');
+
+    expect(chunks.filter((part) => part.type === 'start')).toHaveLength(1);
+    expect(startAt).toBe(0);
+    expect(chunks.findIndex((part) => part.type === STREAM_PARTS.conversation)).toBeGreaterThan(
+      startAt,
+    );
+  });
+
   it('AC2: sends the citations before any text', async () => {
     // The passages are known before generation starts, so the sources panel
     // can render while the answer is still being written.

@@ -78,11 +78,17 @@ describe('chat and conversations (e2e)', () => {
       expect(headers['content-type']).toMatch(/text\/event-stream/);
 
       const parts = parseStream(text);
+      const startAt = parts.findIndex((part) => part.type === 'start');
       const conversationAt = parts.findIndex((part) => part.type === 'data-conversation');
       const citationsAt = parts.findIndex((part) => part.type === 'data-citations');
       const firstTextAt = parts.findIndex((part) => part.type === 'text-delta');
 
-      expect(conversationAt).toBe(0);
+      // `start` first, and exactly once: data parts written before a message
+      // has started belong to no message, and the client renders them as a
+      // second, empty one.
+      expect(startAt).toBe(0);
+      expect(parts.filter((part) => part.type === 'start')).toHaveLength(1);
+      expect(conversationAt).toBeGreaterThan(startAt);
       expect(citationsAt).toBeGreaterThan(conversationAt);
       expect(firstTextAt).toBeGreaterThan(citationsAt);
       expect(parts.filter((part) => part.type === 'text-delta').length).toBeGreaterThan(1);
