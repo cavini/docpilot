@@ -1,6 +1,6 @@
 # Spec: Upload and document library
 
-Status: accepted Milestone: M3
+Status: implemented Milestone: M3
 
 ## Problem and goal
 
@@ -117,15 +117,27 @@ file size is localised.
 
 ## Test plan
 
-| AC                             | Level               | File                                                    |
-| ------------------------------ | ------------------- | ------------------------------------------------------- |
-| AC4, AC5                       | unit                | `apps/web/src/features/documents/validate-file.test.ts` |
-| AC1, AC2, AC7, AC8, AC11, AC12 | component (RTL)     | `apps/web/src/features/documents/*.test.tsx`            |
-| AC6, AC9                       | component (RTL)     | `apps/web/src/features/documents/document-row.test.tsx` |
-| AC3, AC13                      | component (browser) | `apps/web/cypress/component/dropzone.cy.tsx`            |
-| AC10                           | component (browser) | `apps/web/cypress/component/document-row.cy.tsx`        |
-| all states                     | Storybook           | `packages/ui/src/**/*.stories.tsx`                      |
-| AC2, AC6, AC7, AC14            | browser e2e         | `apps/web/e2e/documents.spec.ts`                        |
+| AC                             | Level               | File                                                        |
+| ------------------------------ | ------------------- | ----------------------------------------------------------- |
+| AC4, AC5                       | unit                | `apps/web/src/features/documents/validate-file.test.ts`     |
+| AC14 formatting                | unit                | `apps/web/src/features/documents/format.test.ts`            |
+| AC1, AC2, AC4, AC5, AC11, AC12 | component (RTL)     | `apps/web/src/features/documents/document-library.test.tsx` |
+| AC6–AC10                       | component (RTL)     | `apps/web/src/features/documents/document-row.test.tsx`     |
+| AC2, AC3, AC13                 | component (browser) | `packages/ui/src/dropzone/dropzone.stories.tsx`             |
+| all states                     | Storybook           | `packages/ui/src/**/*.stories.tsx`                          |
+| AC1, AC7, AC8, AC10, AC14      | browser e2e         | `apps/web/e2e/documents.spec.ts`                            |
+
+**AC4 and AC5 are tested through a drop, not the file picker.** The picker
+already filters by the input's `accept`, so an unsupported file can never arrive
+that way — which is exactly why the check exists: a drop bypasses `accept` and
+hands the page whatever was dragged onto it. Testing it through the picker
+passes while asserting nothing, which is how the first version of that test was
+wrong.
+
+**AC6 and AC9** — live progress and retry — are asserted at the component level
+with the event already applied. That a real socket event reaches a client is the
+API's `test/e2e/ingestion-progress.spec.ts`; that the queue is consumed at all
+is `test/integration/worker.spec.ts`.
 
 ## Open questions
 

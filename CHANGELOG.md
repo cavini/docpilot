@@ -71,6 +71,22 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 - `docs/api.md`, the retrieval half of `docs/rag-pipeline.md`, and ADRs for the
   AI SDK choice and for RRF.
 
+### Added in M3
+
+- A document library in the web app: drag and drop or choose a file, watch it go
+  from queued to ready over the WebSocket, see what is already held, retry a
+  failure, delete. The first part of the product usable without `curl`, and it
+  works identically against a real provider or the mock.
+- Design-system primitives for it and for the chat that follows: `Progress`,
+  `StatusBadge`, `Spinner`, `EmptyState`, `Dropzone`, `CitationChip`,
+  `SidePanel`, `MessageBubble`, each with stories covering every state in both
+  languages and axe running on all of them.
+- Document endpoints in the typed RTK Query client, with socket events patching
+  the cache rather than invalidating it — an invalidation would refetch the
+  whole list on every progress tick to apply a change the event already carried.
+- Specs for the whole milestone: `upload-ui`, `streaming-chat`,
+  `citations-panel`, `i18n`.
+
 ### Fixed
 
 - **The ingestion queue was never consumed, in any process.** `RUN_WORKER` was
