@@ -464,6 +464,59 @@ failure after that can only be an error part inside it.
 A partial answer is **kept**, marked `stopped` or `failed`. Closing the
 connection aborts generation, which also stops the provider billing.
 
+### `POST /agent`
+
+The same request and response as `/chat`, with the model choosing tools rather
+than being handed one fixed search. What differs is the stream's contents.
+
+```bash
+curl -N -X POST localhost:3001/agent \
+  -H 'content-type: application/json' \
+  -d '{"question": "Summarise the billing guide"}'
+```
+
+Alongside the text and the two data parts, the stream carries the SDK's tool
+parts:
+
+| Part                                   | Means                                       |
+| -------------------------------------- | ------------------------------------------- |
+| `tool-input-start`, `tool-input-delta` | A call is being composed                    |
+| `tool-input-available`                 | The model has decided what to pass          |
+| `tool-output-available`                | The tool returned                           |
+| `tool-output-error`                    | The tool threw                              |
+| `tool-approval-request`                | **Nothing has run.** The reader must answer |
+| `tool-output-denied`                   | The reader said no                          |
+
+A tool that fails returns `{ ok: false, code, message }` as its _output_ — the
+model is meant to read it and act, so it is data rather than an error part.
+
+**`create_ticket` is never executed before the reader answers.** The loop
+enforces that, not the tool.
+
+#### Answering an approval
+
+Post again with `messages`: the turn so far, as the AI SDK client holds it. The
+reader's answer lives inside the message parts, so this is the only way to carry
+it.
+
+```json
+{ "question": "Open a ticket", "conversationId": "…", "messages": [ … ] }
+```
+
+Those messages resume the paused turn and nothing else. The conversation's
+history still comes from the server's store.
+
+A client built with the AI SDK gets this for free — `addToolApprovalResponse`
+plus `sendAutomaticallyWhen` — and is the intended way to consume it.
+
+#### The step limit
+
+`AGENT_MAX_STEPS` (six) bounds the model calls in one turn. A turn that uses
+them all without answering ends with a notice saying so rather than an empty
+message.
+
+→ [`agent-and-tools.md`](./agent-and-tools.md).
+
 ### `GET /conversations`
 
 Most recently used first — sorted on `updatedAt`, so a conversation returned to
@@ -567,15 +620,16 @@ client that misses one, is in [`realtime.md`](./realtime.md).
 
 ## Rate limits
 
-There are none yet. The endpoints that need one are `/ask` and `/chat`, where
-each request costs money, and the limit belongs with the authentication that
+There are none yet. The endpoints that need one are `/ask`, `/chat` and `/agent`
+— the last most of all, since one turn can be several model calls — where each
+request costs money, and the limit belongs with the authentication that
 identifies who to limit — both arrive together in M8. Until then the only
 ceiling is `MAX_UPLOAD_MB`.
 
 ## Not yet implemented
 
-| Endpoint              | Milestone | What it adds                         |
-| --------------------- | --------- | ------------------------------------ |
-| Tool calling          | M4        | The model acting, not just answering |
-| `POST /graphql`       | M5        | Behind `FF_GRAPHQL`                  |
-| Structured extraction | M6        | Schema-constrained output            |
+| Endpoint           | Milestone | What it adds               |
+| ------------------ | --------- | -------------------------- |
+| `POST /graphql`    | M5        | Behind `FF_GRAPHQL`        |
+| `POST /extract`    | M5        | The schema registry direct |
+| Evaluation harness | M7        | Measuring any of this      |
