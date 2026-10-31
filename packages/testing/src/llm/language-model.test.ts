@@ -87,6 +87,34 @@ describe('createScriptedLanguageModel', () => {
     expect((await collect(second.textStream)).join('')).toBe('only');
   });
 
+  it('calls a tool when scripted to, which no real model can be made to do', async () => {
+    // A real model decides for itself whether to call a tool, which is
+    // exactly what a test asserting "the step limit stops it" cannot depend
+    // on.
+    const model = createScriptedLanguageModel([
+      { text: '', toolCall: { toolName: 'search_docs', input: { query: 'tokens' } } },
+    ]);
+
+    const result = streamText({ model, prompt: 'q' });
+    await collect(result.textStream);
+
+    const calls = await result.toolCalls;
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({ toolName: 'search_docs' });
+  });
+
+  it('finishes a tool call with "tool-calls", so the loop runs another step', async () => {
+    const model = createScriptedLanguageModel([
+      { text: '', toolCall: { toolName: 'search_docs', input: { query: 'x' } } },
+    ]);
+
+    const result = streamText({ model, prompt: 'q' });
+    await collect(result.textStream);
+
+    expect(await result.finishReason).toBe('tool-calls');
+  });
+
   it('streams nothing for empty text, rather than one empty chunk', async () => {
     const model = createScriptedLanguageModel([{ text: '' }]);
 

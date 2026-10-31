@@ -1,6 +1,10 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
-import { createDeterministicEmbeddingModel, createScriptedLanguageModel } from '@docpilot/testing';
+import {
+  createDeterministicEmbeddingModel,
+  createScriptedLanguageModel,
+  type ScriptedResponse,
+} from '@docpilot/testing';
 import { type EmbeddingModel, type LanguageModel } from 'ai';
 
 import { type Env } from '../config/env.schema.js';
@@ -68,6 +72,27 @@ export const CANNED_MOCK_ANSWER =
   'is what a real model would have been given to answer from. Set ' +
   'LLM_PROVIDER and an API key to get a real answer.';
 
+/**
+ * What the mock provider does when the agent runs it.
+ *
+ * Scripted to search once and then answer, so the agent loop can be seen
+ * working without a key: the tool step is real, the search it runs is real,
+ * and only the decision to run it is scripted.
+ *
+ * Without this the mock answers directly every time, and `/agent` looks
+ * identical to `/chat` — which would hide the one thing M4 added.
+ */
+export const CANNED_MOCK_AGENT_SCRIPT: ScriptedResponse[] = [
+  { text: '', toolCall: { toolName: 'search_docs', input: { query: 'the question' } } },
+  {
+    text:
+      'This is a canned answer from the mock provider. The tool step above is ' +
+      'real: the agent searched the documents and the passage it found [1] is ' +
+      'what a model would have been given. Only the decision to search was ' +
+      'scripted. Set LLM_PROVIDER and an API key for a real one.',
+  },
+];
+
 /** A chat model, with the provider and id needed to price its usage. */
 export interface ResolvedChatModel {
   model: LanguageModel;
@@ -88,14 +113,18 @@ export interface ResolvedChatModel {
  * because a real model cannot be made to invent one on demand.
  *
  * @param env Validated configuration.
- * @param mockResponse What the mock model should answer. Defaults to a canned
- *   sentence citing the first passage, so that running the whole product with
- *   no API key produces a complete, obviously-canned answer rather than an
- *   error. Tests pass their own.
+ * @param mockScript What the mock model should do: a single answer, or a
+ *   script of responses for a loop that takes several steps. Defaults to a
+ *   canned sentence citing the first passage, so running the whole product
+ *   with no API key produces a complete, obviously-canned answer rather than
+ *   an error. Tests pass their own.
  * @returns The model, with the provider and id needed to price its usage.
  * @throws If a real provider is selected without its key.
  */
-export function createChatModel(env: Env, mockResponse = CANNED_MOCK_ANSWER): ResolvedChatModel {
+export function createChatModel(
+  env: Env,
+  mockScript: string | ScriptedResponse[] = CANNED_MOCK_ANSWER,
+): ResolvedChatModel {
   if (env.LLM_PROVIDER === 'anthropic') {
     if (!env.ANTHROPIC_API_KEY) {
       throw new Error('ANTHROPIC_API_KEY is required when LLM_PROVIDER is "anthropic".');
@@ -119,7 +148,9 @@ export function createChatModel(env: Env, mockResponse = CANNED_MOCK_ANSWER): Re
   }
 
   return {
-    model: createScriptedLanguageModel([{ text: mockResponse }]),
+    model: createScriptedLanguageModel(
+      typeof mockScript === 'string' ? [{ text: mockScript }] : mockScript,
+    ),
     provider: 'mock',
     modelId: 'mock-chat',
   };
