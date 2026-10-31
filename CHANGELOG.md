@@ -73,6 +73,19 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Keyword search had been a sequential scan since the heading-path fix:
+  replacing the generated `tsv` column dropped the GIN index with it, and
+  `drizzle-kit` could not see the cascade. Migration `0003` recreates it.
+- Vector search was not using the HNSW index either. Joining `documents` for the
+  `ready` filter inside the nearest-neighbour query made Postgres materialise
+  the join and sort, returning identical rows without the index. The approximate
+  search now runs on `chunks` alone and the join happens after it.
+- The keyword predicate read its text-search configuration from the row, which
+  no GIN index can serve. It now expands into one language-guarded branch per
+  configuration, with the same semantics.
+- Both query plans are now asserted in the integration suite, because a lost
+  index changes nothing about the rows returned and is invisible to every test
+  that only checks results.
 - `POST /documents/:id/retry` returns 202, but the published spec declared 200.
 - Redis reported as down on every fresh process: with the offline queue
   disabled, a lazily created client could not issue its first command.

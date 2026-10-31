@@ -135,13 +135,40 @@ configuration silently halves keyword recall, and nothing announces it.
 enum is the validated domain value, constrained to languages the project
 supports; the `regconfig` exists because the generated column requires it.
 
+### Replacing a generated column takes its index
+
+This cost a real bug. Migration `0002` folded the heading path into `tsv`, and
+the only way to change a generated column's expression is to drop and re-add it:
+
+```sql
+ALTER TABLE "chunks" drop column "tsv";
+ALTER TABLE "chunks" ADD COLUMN "tsv" "tsvector" GENERATED ALWAYS AS (…) STORED;
+```
+
+`DROP COLUMN` takes every index that depends on the column with it, so
+`chunks_tsv_idx` went with it and was never recreated. Keyword search became a
+sequential scan over every chunk and stayed correct, so nothing failed — it just
+stopped being indexed.
+
+`drizzle-kit generate` cannot catch this. Its snapshot still recorded the index
+as present, because the drop was a _column_ change rather than an _index_
+change, so diffing the schema against the snapshot reported nothing to do.
+Migration `0003` recreates it by hand.
+
+What catches it now is a test that asserts the query plan, in
+`test/integration/retrieval.spec.ts`. A missing index changes nothing about the
+rows returned, so it is invisible to every test that only checks results.
+
 ### Indexes
 
 - `chunks_document_ordinal_idx` (unique) — reads a document's chunks in order,
   and enforces the invariant above.
 - `chunks_embedding_hnsw_idx` — HNSW with `vector_cosine_ops`, `m = 16`,
-  `ef_construction = 64`.
-- `chunks_tsv_idx` — GIN, the right index for a `tsvector`.
+  `ef_construction = 64`. Only `<=>` can use it; see
+  [`rag-pipeline.md`](./rag-pipeline.md#two-searches-one-ranking).
+- `chunks_tsv_idx` — GIN, the right index for a `tsvector`. Usable only when the
+  `tsquery` on the right-hand side is constant across rows, which shapes how the
+  keyword search is written.
 
 ### HNSW rather than IVFFlat
 

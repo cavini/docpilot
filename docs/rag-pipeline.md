@@ -247,24 +247,35 @@ Rank Fusion — the reasoning, and why positions are used rather than scores, is
 The two queries are issued **concurrently**, so the cost is the slower of them
 rather than the sum.
 
-Both reduce to this, trimmed to the clauses that matter:
+Both reduce to this, trimmed to the clauses that matter. The shape is more
+deliberate than it looks:
 
 ```sql
 -- nearest neighbours by cosine distance
-select c.id, c.content, c.heading_path, c.page_start
-from chunks c
-join documents d on d.id = c.document_id
-where c.embedding is not null
-  and d.status = 'ready'
-order by c.embedding <=> $1::vector
+with nearest as (
+  select c.id, c.document_id, c.content,
+         c.embedding <=> $1::vector as distance
+  from chunks c
+  where c.embedding is not null
+  order by c.embedding <=> $1::vector
+  limit 100                               -- 2x the pool; see below
+)
+select n.*, d.title
+from nearest n
+join documents d on d.id = n.document_id
+where d.status = 'ready'
+order by n.distance
 limit 50;
 
 -- keyword matches, by cover density
-select c.id, c.content, c.heading_path, c.page_start
+select c.id, c.content, d.title
 from chunks c
 join documents d on d.id = c.document_id
 where d.status = 'ready'
-  and c.tsv @@ websearch_to_tsquery(c.language, $1)
+  and (   (c.language = 'english'::regconfig
+           and c.tsv @@ websearch_to_tsquery('english', $1))
+       or (c.language = 'portuguese'::regconfig
+           and c.tsv @@ websearch_to_tsquery('portuguese', $1)))
 order by ts_rank_cd(c.tsv, websearch_to_tsquery(c.language, $1)) desc, c.id
 limit 50;
 ```
@@ -273,27 +284,60 @@ Neither query returns its score. Fusion uses **positions**, so the distances and
 the ranks never have to be made comparable — which is the whole point of
 [ADR 0006](./adr/0006-hybrid-search-rrf.md).
 
-Four details in there are load-bearing:
+Five details in there are load-bearing, and the first two are there because the
+obvious version of each was wrong.
+
+- **The vector search touches only `chunks`; the join happens outside it.** An
+  HNSW index can serve an `order by … limit` only when `chunks` is the relation
+  the limit applies to. Put the join to `documents` inside, and Postgres
+  materialises the join and sorts the result — returning identical rows, having
+  abandoned the index. Because the status is therefore checked _after_ the
+  search, the inner query over-fetches by a factor of two.
+
+  The keyword search keeps its join, because a GIN match is a _selection_ the
+  planner can push into a bitmap scan on `chunks` and join afterwards, while
+  HNSW serves an _ordering_ that a join above it stops from being pushed down.
+
+- **The keyword predicate expands one branch per language instead of reading the
+  config from the row.** The natural way to write it,
+  `c.tsv @@ websearch_to_tsquery(c.language, $1)`, is equivalent and **cannot
+  use the GIN index at all**: the right-hand side varies per row, so there is no
+  key to probe with and Postgres evaluates the match on every chunk in the
+  table. Expanding the configurations into constants gives the index a key per
+  branch, and the planner combines them with a bitmap OR. The language guard
+  keeps the semantics identical — dropping it would be shorter and would quietly
+  loosen recall by matching every chunk against both stemmings.
 
 - **`<=>` is the operator the HNSW index was built for.** Writing the cosine
   distance any other way — `1 - (a <#> b)`, or a helper function — produces the
   same numbers and a sequential scan, because the planner matches an index by
-  operator. The query stays correct and quietly stops being fast, which is the
-  failure mode no test catches.
+  operator, not by what the expression computes.
+
+  Worth checking rather than believing. With `enable_seqscan` turned off, so the
+  planner uses an index if one can possibly serve the query:
+
+  | `ORDER BY`         | Plan                                         |
+  | ------------------ | -------------------------------------------- |
+  | `embedding <=> $1` | `Index Scan using chunks_embedding_hnsw_idx` |
+  | `embedding <#> $1` | `Seq Scan` + `Sort`                          |
+  | `embedding <-> $1` | `Seq Scan` + `Sort`                          |
+
+  The index was created with `vector_cosine_ops`, so only `<=>` can use it. The
+  other two are not slower because the planner chose badly — no index exists
+  that can answer them.
+
 - **`websearch_to_tsquery`, not `to_tsquery`.** A typed question contains
   apostrophes, colons and ampersands, all of which are `tsquery` operators.
   `to_tsquery` raises a syntax error on them, so a user asking
   `what's the rate limit?` would get a 500. `websearch_to_tsquery` accepts
   arbitrary text and reads quoted phrases, `or`, and a leading `-` the way a
   search box does.
-- **`c.language`, not a constant.** The stemmer is per chunk, so a Portuguese
-  passage is matched with the Portuguese stemmer in the same query as an English
-  one. One configuration for the whole corpus would silently halve recall in the
-  other language. This is why `language` is a `regconfig` column — see
-  [`data-model.md`](./data-model.md).
+
 - **`ts_rank_cd`, not `ts_rank`.** Cover density rewards matched terms appearing
-  _close together_, which is what separates a passage actually about the query
-  from one that happens to mention each word once, paragraphs apart.
+  _close together_, which separates a passage actually about the query from one
+  that happens to mention each word once, paragraphs apart. It is computed only
+  for rows that already matched, so unlike the predicate it does not have to be
+  index-friendly — which is why it can keep reading the per-row config.
 
 `order by … desc, c.id` breaks ties on id, so a repeated search returns the same
 order. An unstable order makes every downstream test flaky and makes a bug
@@ -302,6 +346,23 @@ report impossible to reproduce.
 Only chunks of `ready` documents are searched, and only chunks that have an
 embedding. A document mid-ingestion has some of its passages written and not
 others; answering from half a document is worse than waiting for all of it.
+
+### Both indexes are asserted, not assumed
+
+A lost index changes nothing about the rows a query returns. It is invisible to
+every test that checks results, and both of the mistakes above shipped and were
+found by reading query plans by hand rather than by a failing test.
+
+`test/integration/retrieval.spec.ts` now plans each query with
+`enable_seqscan = off` and asserts the index appears. Disabling sequential scans
+is what makes the assertion mean something: a sequential scan then proves no
+index _could_ serve the query, rather than that the planner judged a few dozen
+rows not worth a lookup.
+
+The keyword predicate is planned against `chunks` alone rather than through the
+whole search. With the join present the planner may quite reasonably drive from
+`documents` instead on a small corpus, so asserting the full plan would make the
+test pass or fail with the corpus size rather than with the thing being tested.
 
 ### The candidate pool
 
