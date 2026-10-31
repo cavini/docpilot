@@ -163,6 +163,7 @@ export class IngestionProcessor extends WorkerHost implements OnApplicationBoots
         status: 'ready',
         chunkCount: pieces.length,
         pageCount: parsed.pageCount,
+        language,
       },
     });
 

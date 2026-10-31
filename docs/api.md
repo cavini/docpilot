@@ -410,17 +410,17 @@ const socket = io('http://localhost:3001/ingestion');
 socket.emit('subscribe', { documentIds: [documentId] }, (ack) => ack.ok);
 
 socket.on('ingestion.progress', (e) => e.status); // parsing | chunking | embedding
-socket.on('ingestion.completed', (e) => e.chunkCount);
+socket.on('ingestion.completed', (e) => e.chunkCount); // + pageCount, language
 socket.on('ingestion.failed', (e) => e.error);
 
 socket.emit('unsubscribe', { documentIds: [documentId] });
 ```
 
-| Event                 | Payload                                                  |
-| --------------------- | -------------------------------------------------------- |
-| `ingestion.progress`  | `{ documentId, status, progress }`                       |
-| `ingestion.completed` | `{ documentId, status: 'ready', chunkCount, pageCount }` |
-| `ingestion.failed`    | `{ documentId, status: 'failed', error }`                |
+| Event                 | Payload                                                            |
+| --------------------- | ------------------------------------------------------------------ |
+| `ingestion.progress`  | `{ documentId, status, progress }`                                 |
+| `ingestion.completed` | `{ documentId, status: 'ready', chunkCount, pageCount, language }` |
+| `ingestion.failed`    | `{ documentId, status: 'failed', error }`                          |
 
 `subscribe` acknowledges with each document's **current** state, so a client
 that connects after ingestion started is not left waiting for an event that

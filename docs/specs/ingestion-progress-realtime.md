@@ -37,11 +37,11 @@ there is no window in which the client knows nothing.
 
 **Server → client**
 
-| Event                 | Payload                                                  |
-| --------------------- | -------------------------------------------------------- |
-| `ingestion.progress`  | `{ documentId, status, progress }`                       |
-| `ingestion.completed` | `{ documentId, status: 'ready', chunkCount, pageCount }` |
-| `ingestion.failed`    | `{ documentId, status: 'failed', error }`                |
+| Event                 | Payload                                                            |
+| --------------------- | ------------------------------------------------------------------ |
+| `ingestion.progress`  | `{ documentId, status, progress }`                                 |
+| `ingestion.completed` | `{ documentId, status: 'ready', chunkCount, pageCount, language }` |
+| `ingestion.failed`    | `{ documentId, status: 'failed', error }`                          |
 
 ## Acceptance criteria
 
