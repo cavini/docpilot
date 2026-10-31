@@ -8,6 +8,7 @@
  * then fails in Next, which looks for a file that does not exist because the
  * source is `.tsx`.
  */
+export { ApprovalPrompt, type ApprovalPromptProps } from './approval/approval-prompt';
 export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from './button/button';
 export { CitationChip, type CitationChipProps } from './citation-chip/citation-chip';
 export { Dropzone, type DropzoneProps } from './dropzone/dropzone';
@@ -21,3 +22,4 @@ export { SidePanel, type SidePanelProps } from './panel/side-panel';
 export { Progress, type ProgressProps } from './progress/progress';
 export { Spinner, type SpinnerProps } from './spinner/spinner';
 export { StatusBadge, type StatusBadgeProps, type StatusTone } from './status-badge/status-badge';
+export { ToolStep, type ToolStepProps, type ToolStepStatus } from './tool-step/tool-step';
