@@ -106,6 +106,36 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Larger than `MAX_UPLOAD_MB`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Not a type the API can read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "summary": "Upload a PDF, Markdown or plain text document",
@@ -174,6 +204,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "No such resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "summary": "Read one document and its ingestion status",
@@ -196,6 +236,16 @@
         "responses": {
           "204": {
             "description": "The document is gone"
+          },
+          "404": {
+            "description": "No such resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "summary": "Delete a document and everything derived from it",
@@ -218,12 +268,32 @@
           }
         ],
         "responses": {
-          "200": {
+          "202": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DocumentResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the resource’s current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
                 }
               }
             }
@@ -259,6 +329,26 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A dependency is unavailable. Retrying is reasonable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "summary": "Search the corpus with hybrid retrieval",
@@ -288,6 +378,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AskResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A dependency is unavailable. Retrying is reasonable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
                 }
               }
             }
@@ -511,6 +621,47 @@
           "chunkCount",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "ErrorBodyDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable identifier for the failure. Branch on this rather\nthan on the message, which may be reworded.",
+            "example": "not_found"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable explanation. Never contains credentials.",
+            "example": "document 7f3a was not found"
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Identifier of the request that failed. Quote it in a bug report: it\nappears on every log line for the request.",
+            "example": "6f6cf7c5-d7c3-4281-8c89-c67912abade4"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Extra context, present only when it helps the caller act."
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId"
+        ]
+      },
+      "ErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBodyDto"
+          }
+        },
+        "required": [
+          "error"
         ]
       },
       "DocumentPageDto": {

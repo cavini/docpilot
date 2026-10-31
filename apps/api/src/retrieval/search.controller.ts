@@ -1,6 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+import { ApiErrors } from '../common/http/api-errors.decorator.js';
 import { RetrievalService } from './retrieval.service.js';
 import { SearchRequestDto, SearchResponseDto } from './search.dto.js';
 
@@ -26,6 +27,7 @@ export class SearchController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Search the corpus with hybrid retrieval' })
   @ApiOkResponse({ description: 'Ranked passages', type: SearchResponseDto })
+  @ApiErrors(400, 503)
   async search(@Body() body: SearchRequestDto): Promise<SearchResponseDto> {
     const result = await this.retrieval.search({
       query: body.query,

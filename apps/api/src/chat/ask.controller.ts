@@ -2,6 +2,7 @@ import { Body, Controller, HttpCode, HttpStatus, Post, Req } from '@nestjs/commo
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { type Request } from 'express';
 
+import { ApiErrors } from '../common/http/api-errors.decorator.js';
 import { AskRequestDto, AskResponseDto } from './ask.dto.js';
 import { AskService } from './ask.service.js';
 
@@ -22,6 +23,7 @@ export class AskController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Answer a question from the documents, with citations' })
   @ApiOkResponse({ description: 'The answer and its citations', type: AskResponseDto })
+  @ApiErrors(400, 503)
   async answer(@Body() body: AskRequestDto, @Req() request: Request): Promise<AskResponseDto> {
     const { id } = request as Request & { id?: unknown };
 
