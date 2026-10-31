@@ -70,5 +70,29 @@
       "english": "Inglês",
       "portuguese": "Português"
     }
+  },
+  "chat": {
+    "heading": "Perguntar",
+    "newConversation": "Nova conversa",
+    "transcriptLabel": "Conversa",
+    "you": "Você",
+    "assistant": "DocPilot",
+    "thinking": "Procurando nos documentos…",
+    "failed": "Não foi possível concluir a resposta.",
+    "retry": "Perguntar de novo",
+    "send": "Enviar",
+    "stop": "Parar",
+    "questionLabel": "Sua pergunta",
+    "placeholder": "Pergunte sobre seus documentos…",
+    "empty": {
+      "title": "Faça uma pergunta",
+      "description": "As respostas vêm somente dos documentos acima, com citações que apontam para o trecho de origem."
+    },
+    "sources": {
+      "title": "Fontes",
+      "close": "Fechar fontes",
+      "page": "Página {page}",
+      "pageRange": "Páginas {from}–{to}"
+    }
   }
 }
