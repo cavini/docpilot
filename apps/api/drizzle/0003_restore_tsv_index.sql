@@ -1,0 +1,12 @@
+-- `0002` replaced the generated `tsv` column to fold the heading path into it.
+-- Dropping a column takes every index that depends on it, so the GIN index
+-- created in `0001` went with it and was never recreated: every keyword search
+-- since has been a sequential scan over `chunks`.
+--
+-- `drizzle-kit generate` cannot see this. Its snapshot still records the index
+-- as present, because the drop was a column change rather than an index change,
+-- so a diff against the schema reports nothing to do.
+--
+-- `IF NOT EXISTS` so a database created from `0001` onwards without the drop
+-- is not broken by re-running this.
+CREATE INDEX IF NOT EXISTS "chunks_tsv_idx" ON "chunks" USING gin ("tsv");
