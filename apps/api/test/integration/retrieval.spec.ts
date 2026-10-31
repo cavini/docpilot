@@ -156,6 +156,38 @@ describe('hybrid retrieval against real infrastructure', () => {
       expect(result.vectorRank !== null || result.keywordRank !== null).toBe(true);
     }
   }, 60_000);
+
+  // Last in the block on purpose: it ingests a document, so it must not change
+  // the corpus the tests above search.
+  it('AC12: serves a cached embedding without serving cached results', async () => {
+    const query = 'X-Lumen-Idempotency-Key';
+
+    const before = await retrieval.search({ query });
+
+    // Vector search has no relevance floor, so this returns its nearest
+    // neighbours even though nothing matches. What matters is that none of
+    // them is the document that does not exist yet.
+    expect(before.cached).toBe(false);
+    const titlesBefore = before.results.map((result) => result.documentTitle);
+
+    expect(titlesBefore).not.toContain('lumen-idempotency');
+
+    const { document } = await harness.documents.upload(
+      fileFrom(
+        'lumen-idempotency.md',
+        ['# Idempotency', '', 'Send X-Lumen-Idempotency-Key to make a retry safe.'].join('\n'),
+      ),
+    );
+    await harness.processor.process(jobFor(document.id));
+
+    const after = await retrieval.search({ query });
+
+    // The embedding was reused — so the search did not re-embed — and yet the
+    // newly ingested passage is now in the results. Caching the results
+    // alongside the embedding would have returned the pre-upload set.
+    expect(after.cached).toBe(true);
+    expect(after.results.some((result) => result.documentId === document.id)).toBe(true);
+  }, 120_000);
 });
 
 /**

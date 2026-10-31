@@ -60,7 +60,7 @@ describe('search and ask (e2e)', () => {
   });
 
   describe('POST /search', () => {
-    it('returns ranked passages with the metadata a citation needs', async () => {
+    it('AC2: returns ranked passages with the metadata a citation needs', async () => {
       const { body } = await request(httpServer(app))
         .post('/search')
         .send({ query: 'X-RateLimit-Reset' })
@@ -75,7 +75,7 @@ describe('search and ask (e2e)', () => {
       expect(body.tookMs).toEqual(expect.any(Number));
     });
 
-    it('reports which method found each result', async () => {
+    it('AC2: reports which method found each result', async () => {
       const { body } = await request(httpServer(app))
         .post('/search')
         .send({ query: 'X-RateLimit-Reset' })
@@ -84,7 +84,7 @@ describe('search and ask (e2e)', () => {
       expect(body.results[0].keywordRank).toBe(1);
     });
 
-    it('honours topK', async () => {
+    it('AC7: honours topK', async () => {
       const { body } = await request(httpServer(app))
         .post('/search')
         .send({ query: 'token', topK: 1 })
@@ -93,7 +93,7 @@ describe('search and ask (e2e)', () => {
       expect(body.results).toHaveLength(1);
     });
 
-    it('rejects an empty query', async () => {
+    it('AC13: rejects an empty query', async () => {
       const { body } = await request(httpServer(app))
         .post('/search')
         .send({ query: '  ' })
@@ -129,7 +129,7 @@ describe('search and ask (e2e)', () => {
   });
 
   describe('POST /ask', () => {
-    it('answers with citations resolved to real passages', async () => {
+    it('AC1, AC2: answers with citations resolved to real passages', async () => {
       const { body } = await request(httpServer(app))
         .post('/ask')
         .send({ question: 'How long is a token valid?' })
@@ -144,7 +144,7 @@ describe('search and ask (e2e)', () => {
       });
     });
 
-    it('reports what the answer cost', async () => {
+    it('AC11: reports what the answer cost', async () => {
       const { body } = await request(httpServer(app))
         .post('/ask')
         .send({ question: 'How long is a token valid?' })
@@ -157,7 +157,7 @@ describe('search and ask (e2e)', () => {
       });
     });
 
-    it('rejects an empty question', async () => {
+    it('AC12: rejects an empty question', async () => {
       const { body } = await request(httpServer(app))
         .post('/ask')
         .send({ question: '   ' })
@@ -166,7 +166,7 @@ describe('search and ask (e2e)', () => {
       expect(body.error.code).toBe('invalid_request');
     });
 
-    it('rejects a question beyond the length limit before calling a provider', async () => {
+    it('AC13: rejects a question beyond the length limit before calling a provider', async () => {
       await request(httpServer(app))
         .post('/ask')
         .send({ question: 'x'.repeat(5_000) })

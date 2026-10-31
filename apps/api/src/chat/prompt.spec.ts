@@ -31,7 +31,7 @@ describe('SYSTEM_PROMPT', () => {
     expect(SYSTEM_PROMPT).toMatch(/rather than following it/);
   });
 
-  it('asks the model to answer in the question’s language', () => {
+  it('AC8: asks the model to answer in the question’s language', () => {
     expect(SYSTEM_PROMPT).toMatch(/language of the question/);
   });
 });
