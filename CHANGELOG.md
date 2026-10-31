@@ -52,8 +52,28 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   search and a generated `tsvector` for keyword search.
 - A demo corpus in English and Portuguese, and `pnpm seed`.
 
+### Added in M2
+
+- Hybrid search (`POST /search`): vector and keyword search run concurrently and
+  their rankings are fused with Reciprocal Rank Fusion. Each result reports its
+  position in both methods, so a bad result shows whether retrieval or the model
+  was at fault.
+- Grounded answers (`POST /ask`): the retrieved passages, an instruction to use
+  only them, and citation markers resolved server-side against the chunks
+  actually retrieved. A marker the model invented is removed rather than
+  returned pointing at nothing.
+- Query embeddings cached in Redis, keyed by question and model. Results are
+  deliberately not cached, because the corpus changes on every upload.
+- `LLM_PROVIDER=mock`, which answers through the same factory and call path as a
+  real provider, so the whole product runs with no API key and no bill.
+- Failure responses are now in the published OpenAPI spec, and the contract
+  suite validates real error bodies against them.
+- `docs/api.md`, the retrieval half of `docs/rag-pipeline.md`, and ADRs for the
+  AI SDK choice and for RRF.
+
 ### Fixed
 
+- `POST /documents/:id/retry` returns 202, but the published spec declared 200.
 - Redis reported as down on every fresh process: with the offline queue
   disabled, a lazily created client could not issue its first command.
 - The web application showed "API unreachable" when the API answered 503,
