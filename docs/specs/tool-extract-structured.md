@@ -69,7 +69,10 @@ items validate against the named schema.
 returns a structured error listing the names that are.
 
 **AC3.** Given the model returns something that does not match, when it is
-validated, then the tool returns an error rather than passing it on.
+validated, then it does not reach the caller. A whole response that does not
+match is a structured error; a single item the provider let through is dropped
+and counted, because one bad endpoint among ten good ones is still nine
+endpoints.
 
 **AC4.** Given nothing in the corpus matches, when extraction runs, then an
 empty list is returned rather than invented items.
@@ -84,11 +87,12 @@ citations back to the passages they came from.
 
 ## Edge cases and failure modes
 
-| Situation                          | Behaviour                                                 |
-| ---------------------------------- | --------------------------------------------------------- |
-| Provider cannot enforce the schema | Validated here; a mismatch is an error, not a best effort |
-| Duplicate items across passages    | Deduplicated on method and path                           |
-| A method the schema does not know  | That item is dropped, and the drop is reported            |
+| Situation                                  | Behaviour                                                                                                                    |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Response does not match the schema at all  | The SDK rejects it; the tool returns a structured error rather than rethrowing, so the model can retry with a narrower query |
+| Provider lets an almost-right item through | Validated here too; that item is dropped and counted                                                                         |
+| Duplicate items across passages            | Deduplicated on method and path                                                                                              |
+| A method the schema does not know          | That item is dropped, and the drop is reported                                                                               |
 
 ## Non-goals
 

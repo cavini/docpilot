@@ -28,6 +28,21 @@ export interface ScriptedResponse {
    * the partial-answer path needs a model that can be told to.
    */
   failAfter?: number;
+  /**
+   * A tool call to make instead of answering.
+   *
+   * The only way to test an agent loop deterministically. A real model decides
+   * for itself whether to call a tool, which is exactly what a test asserting
+   * "the step limit stops it" cannot depend on: scripting the call makes the
+   * loop's behaviour the thing under test rather than the model's mood.
+   */
+  toolCall?: { toolName: string; input: unknown };
+}
+
+/** A scripted response that calls a tool rather than answering. */
+export interface ScriptedToolCall {
+  toolName: string;
+  input: unknown;
 }
 
 /** Splits text the way a model tends to emit it: a word at a time. */
@@ -72,7 +87,19 @@ export function createScriptedLanguageModel(responses: ScriptedResponse[]): Mock
       const outputTokens = response.outputTokens ?? 20;
 
       return Promise.resolve({
-        content: response.text === '' ? [] : [{ type: 'text', text: response.text }],
+        content:
+          response.toolCall === undefined
+            ? response.text === ''
+              ? []
+              : [{ type: 'text', text: response.text }]
+            : [
+                {
+                  type: 'tool-call',
+                  toolCallId: `call-${String(index)}`,
+                  toolName: response.toolCall.toolName,
+                  input: JSON.stringify(response.toolCall.input),
+                },
+              ],
         // V4 reports a structured finish reason and a structured usage
         // breakdown rather than a bare string and three numbers.
         finishReason: { unified: 'stop', raw: undefined },
@@ -109,6 +136,44 @@ export function createScriptedLanguageModel(responses: ScriptedResponse[]): Mock
       const stream = new ReadableStream<LanguageModelV4StreamPart>({
         start(controller) {
           controller.enqueue({ type: 'stream-start', warnings: [] });
+
+          if (response.toolCall !== undefined) {
+            const callId = `call-${String(index)}`;
+            const serialised = JSON.stringify(response.toolCall.input);
+
+            controller.enqueue({
+              type: 'tool-input-start',
+              id: callId,
+              toolName: response.toolCall.toolName,
+            });
+            controller.enqueue({ type: 'tool-input-delta', id: callId, delta: serialised });
+            controller.enqueue({ type: 'tool-input-end', id: callId });
+            controller.enqueue({
+              type: 'tool-call',
+              toolCallId: callId,
+              toolName: response.toolCall.toolName,
+              input: serialised,
+            });
+            controller.enqueue({
+              type: 'finish',
+              // 'tool-calls' is what tells the loop to run the tool and come
+              // back for another step.
+              finishReason: { unified: 'tool-calls', raw: undefined },
+              usage: {
+                inputTokens: {
+                  total: inputTokens,
+                  noCache: inputTokens,
+                  cacheRead: 0,
+                  cacheWrite: 0,
+                },
+                outputTokens: { total: outputTokens, text: outputTokens, reasoning: 0 },
+              },
+            });
+            controller.close();
+
+            return;
+          }
+
           controller.enqueue({ type: 'text-start', id });
 
           for (const [at, delta] of pieces.entries()) {

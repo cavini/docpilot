@@ -131,6 +131,23 @@ describe('conversations match the published contract', () => {
     expect(validate(body) || describeErrors(validate)).toBe(true);
   });
 
+  it('documents the agent stream as an event stream too', () => {
+    const content = openApiDocument.paths['/agent']?.post?.responses?.['200']?.content ?? {};
+
+    expect(Object.keys(content)).toContain('text/event-stream');
+    expect(Object.keys(content)).not.toContain('application/json');
+  });
+
+  it('documents the agent endpoint failing the same way everything else does', async () => {
+    const validate = responseValidator('/agent', 'post', '400');
+    const { body } = await request(httpServer(app))
+      .post('/agent')
+      .send({ question: '' })
+      .expect(400);
+
+    expect(validate(body) || describeErrors(validate)).toBe(true);
+  });
+
   it('documents the chat stream as an event stream, not as JSON', () => {
     // A client generated from a spec that claimed application/json here would
     // try to parse the whole response as one object and hang.

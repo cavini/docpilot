@@ -1,3 +1,5 @@
+import { type ScriptedResponse } from '@docpilot/testing';
+
 import { type ResolvedChatModel } from '../llm/provider.factory.js';
 
 /**
@@ -7,7 +9,7 @@ import { type ResolvedChatModel } from '../llm/provider.factory.js';
  * the model should answer. Asserting that an invented citation is stripped
  * requires a model that invents one on demand, which no real provider will do.
  */
-export type ChatModelFactory = (mockResponse?: string) => ResolvedChatModel;
+export type ChatModelFactory = (mockScript?: string | ScriptedResponse[]) => ResolvedChatModel;
 
 /** Injection token for {@link ChatModelFactory}. */
 export const CHAT_MODEL_FACTORY = Symbol('DOCPILOT_CHAT_MODEL_FACTORY');

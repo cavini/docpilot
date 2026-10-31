@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { type DynamicModule, Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
+import { AgentModule } from './agent/agent.module.js';
 import { ChatModule } from './chat/chat.module.js';
 import { CommonModule } from './common/common.module.js';
 import { ConfigModule } from './config/config.module.js';
@@ -45,6 +46,7 @@ import { StorageModule } from './storage/storage.module.js';
     FeatureFlagsModule,
     HealthModule,
     LlmModule,
+    AgentModule,
     IngestionModule,
     DocumentsModule,
     RetrievalModule,
