@@ -1,6 +1,6 @@
 # Spec: Hybrid search
 
-Status: accepted Milestone: M2
+Status: implemented, except AC1 — see the test plan Milestone: M2
 
 ## Problem and goal
 
@@ -156,16 +156,28 @@ then it is rejected rather than sent to the provider.
 
 ## Test plan
 
-| AC                 | Level          | File                                                          |
-| ------------------ | -------------- | ------------------------------------------------------------- |
-| AC3–AC6            | unit           | `apps/api/src/retrieval/fusion.spec.ts`                       |
-| AC1, AC2, AC8–AC10 | integration    | `apps/api/test/integration/retrieval.spec.ts`                 |
-| AC7, AC13, AC14    | unit + API e2e | `apps/api/src/retrieval/*.spec.ts`, `test/e2e/search.spec.ts` |
-| AC11, AC12         | integration    | `apps/api/test/integration/retrieval.spec.ts`                 |
+| AC             | Level          | File                                          |
+| -------------- | -------------- | --------------------------------------------- |
+| AC3–AC6, AC9   | unit           | `apps/api/src/retrieval/fusion.spec.ts`       |
+| AC1, AC2       | integration    | `apps/api/test/integration/retrieval.spec.ts` |
+| AC7–AC14       | integration    | `apps/api/test/integration/retrieval.spec.ts` |
+| AC2, AC7, AC13 | API e2e        | `apps/api/test/e2e/ask.spec.ts`               |
+| response shape | contract (Ajv) | `apps/api/test/contract/ask.spec.ts`          |
 
-AC1 and AC2 need embeddings that mean something, so they run against **recorded
-real embeddings** of the fixture corpus rather than the hash-based mock. See
-`docs/testing.md`.
+Integration runs against a real Postgres with pgvector in Testcontainers, a real
+Redis and a real LocalStack, because every interesting claim here is about SQL,
+an index or a cache — none of which a mock can be wrong about in the same way
+the real thing is.
+
+**AC1 is the one criterion the deterministic mock cannot prove.** That a
+paraphrase reaches the passage answering it depends on the embedding carrying
+meaning, and the mock hashes text, so two paraphrases get unrelated vectors.
+Asserting it against the mock would assert the hash. Its test is therefore
+skipped until the recorded-embedding fixture exists — recorded once with a real
+provider, then committed and replayed; see `apps/api/test/fixtures/README.md`.
+
+AC2 is the mirror image and needs no fixture: an exact identifier ranks first
+because of keyword search, which the mock does not touch.
 
 ## Open questions
 
