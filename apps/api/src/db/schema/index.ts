@@ -26,3 +26,4 @@ export {
   type NewDocumentRow,
 } from './documents.js';
 export { llmOperation, llmUsage, type LlmUsageRow, type NewLlmUsageRow } from './llm-usage.js';
+export { tickets, type NewTicketRow, type TicketRow } from './tickets.js';
