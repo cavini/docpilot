@@ -82,4 +82,29 @@ describe('search and ask match the published contract', () => {
 
     expect(validate({ results: [{ chunkId: 'x' }], tookMs: 1, cached: false })).toBe(false);
   });
+
+  it('a rejected search matches the documented error shape', async () => {
+    const validate = responseValidator('/search', 'post', '400');
+    const { body } = await request(httpServer(app))
+      .post('/search')
+      .send({ query: ' ' })
+      .expect(400);
+
+    expect(validate(body) || describeErrors(validate)).toBe(true);
+  });
+
+  it('a rejected question matches the documented error shape', async () => {
+    const validate = responseValidator('/ask', 'post', '400');
+    const { body } = await request(httpServer(app)).post('/ask').send({ question: '' }).expect(400);
+
+    expect(validate(body) || describeErrors(validate)).toBe(true);
+  });
+
+  it('the error schema rejects a body without a request id', () => {
+    // Guards the guard. The request id is the whole point of the shape: it is
+    // what connects a user-visible failure to its log lines.
+    const validate = responseValidator('/ask', 'post', '400');
+
+    expect(validate({ error: { code: 'invalid_request', message: 'no' } })).toBe(false);
+  });
 });

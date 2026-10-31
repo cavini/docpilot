@@ -40,14 +40,14 @@ describe('document responses match the published contract', () => {
       contentType: 'text/markdown',
     });
 
-  it('AC1: a created document matches its documented 201 response', async () => {
+  it('a created document matches its documented 201 response', async () => {
     const validate = responseValidator('/documents', 'post', '201');
     const { body } = await upload().expect(201);
 
     expect(validate(body) || describeErrors(validate)).toBe(true);
   });
 
-  it('AC2: a deduplicated upload matches its documented 200 response', async () => {
+  it('a deduplicated upload matches its documented 200 response', async () => {
     await upload().expect(201);
     const validate = responseValidator('/documents', 'post', '200');
     const { body } = await upload().expect(200);
@@ -55,7 +55,7 @@ describe('document responses match the published contract', () => {
     expect(validate(body) || describeErrors(validate)).toBe(true);
   });
 
-  it('AC3: the document list matches its documented response', async () => {
+  it('the document list matches its documented response', async () => {
     await upload().expect(201);
     const validate = responseValidator('/documents', 'get', '200');
     const { body } = await request(httpServer(app)).get('/documents').expect(200);
@@ -63,7 +63,7 @@ describe('document responses match the published contract', () => {
     expect(validate(body) || describeErrors(validate)).toBe(true);
   });
 
-  it('AC4: reading one document matches its documented response', async () => {
+  it('reading one document matches its documented response', async () => {
     const created = await upload().expect(201);
     const validate = responseValidator('/documents/{id}', 'get', '200');
     const { body } = await request(httpServer(app))
@@ -73,7 +73,7 @@ describe('document responses match the published contract', () => {
     expect(validate(body) || describeErrors(validate)).toBe(true);
   });
 
-  it('AC5: the schema rejects a document missing a required field', () => {
+  it('rejects a document missing a required field', () => {
     // Guards the guard: a schema that accepted anything would make the tests
     // above pass while testing nothing.
     const validate = responseValidator('/documents/{id}', 'get', '200');
@@ -81,7 +81,7 @@ describe('document responses match the published contract', () => {
     expect(validate({ id: '3f1b9c2e-0000-4000-8000-000000000000' })).toBe(false);
   });
 
-  it('AC6: the schema rejects an unknown status value', () => {
+  it('rejects an unknown status value', () => {
     const validate = responseValidator('/documents/{id}', 'get', '200');
 
     expect(
@@ -101,5 +101,21 @@ describe('document responses match the published contract', () => {
         updatedAt: '2026-10-30T12:00:00.000Z',
       }),
     ).toBe(false);
+  });
+
+  it('a 404 matches its documented error shape', async () => {
+    const validate = responseValidator('/documents/{id}', 'get', '404');
+    const { body } = await request(httpServer(app))
+      .get('/documents/3f1b9c2e-0000-4000-8000-000000000000')
+      .expect(404);
+
+    expect(validate(body) || describeErrors(validate)).toBe(true);
+  });
+
+  it('a rejected upload matches its documented error shape', async () => {
+    const validate = responseValidator('/documents', 'post', '400');
+    const { body } = await request(httpServer(app)).post('/documents').expect(400);
+
+    expect(validate(body) || describeErrors(validate)).toBe(true);
   });
 });
