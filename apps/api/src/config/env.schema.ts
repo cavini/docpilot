@@ -93,6 +93,16 @@ export const envSchema = z
     MAX_QUESTION_LENGTH: integerFromString(1000),
     MAX_OUTPUT_TOKENS: integerFromString(1024),
 
+    /**
+     * How many model calls one agent turn may make.
+     *
+     * A model that keeps calling tools - because one keeps failing, or because
+     * it has misunderstood - costs money on every step and would otherwise run
+     * until the request times out. Six is enough for search, read, extract and
+     * answer, with room for one mistake.
+     */
+    AGENT_MAX_STEPS: integerFromString(6),
+
     // Ingestion limits.
     MAX_UPLOAD_MB: integerFromString(20),
 
