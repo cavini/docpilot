@@ -34,6 +34,17 @@
     --color-content-muted: oklch(72% 0.01 250);
     --color-accent: oklch(72% 0.14 255);
     --color-accent-contrast: oklch(20% 0.012 250);
+
+    /*
+     * The status colours need lightening too, which the first version of this
+     * file missed. A hue that reads clearly as red on a white page is a dark
+     * red on a dark one: `danger` measured 3.54:1 against the dark surface at
+     * 12px, against the 4.5:1 that WCAG AA requires for body text. Caught by
+     * the axe check on a Storybook story, not by looking at it.
+     */
+    --color-ok: oklch(78% 0.15 150);
+    --color-warn: oklch(83% 0.14 80);
+    --color-danger: oklch(74% 0.15 25);
   }
 }
 
