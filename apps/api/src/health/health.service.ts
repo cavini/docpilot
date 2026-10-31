@@ -6,10 +6,10 @@ import { type Pool } from 'pg';
 import { PG_POOL } from '../db/db.tokens.js';
 import { REDIS } from '../redis/redis.tokens.js';
 import { StorageService } from '../storage/storage.service.js';
+import { VERSION } from '../version.js';
 import { runProbe } from './probe.js';
 
 /** Version reported by the health endpoint. */
-const VERSION = process.env.DD_VERSION ?? '0.0.0';
 
 /**
  * Reports whether the API and everything it depends on are usable.

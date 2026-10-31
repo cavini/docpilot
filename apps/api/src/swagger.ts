@@ -1,6 +1,8 @@
 import { type INestApplication } from '@nestjs/common';
 import { DocumentBuilder, type OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 
+import { VERSION } from './version.js';
+
 /** Path Swagger UI is served from. */
 export const SWAGGER_PATH = 'docs';
 
@@ -28,7 +30,7 @@ export function buildOpenApiDocument(app: INestApplication): OpenAPIObject {
         'Branch on `code`, which is stable, rather than on `message`.',
       ].join('\n'),
     )
-    .setVersion('0.0.0')
+    .setVersion(VERSION)
     .setLicense('MIT', 'https://opensource.org/licenses/MIT')
     .addServer('http://localhost:3001', 'Local development')
     .addApiKey({ type: 'apiKey', name: 'x-api-key', in: 'header' }, 'demoApiKey')

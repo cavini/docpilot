@@ -1,6 +1,6 @@
 {
   "name": "docpilot",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Answers questions about your documentation with cited sources, and acts on it through tools and MCP",
   "license": "MIT",
