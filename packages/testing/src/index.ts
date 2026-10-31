@@ -5,6 +5,7 @@ export {
   dependencyHealthFactory,
   healthResponseFactory,
 } from './factories/health.factory.js';
+export { createScriptedLanguageModel, type ScriptedResponse } from './llm/language-model.js';
 export {
   MOCK_EMBEDDING_DIMENSIONS,
   createDeterministicEmbeddingModel,

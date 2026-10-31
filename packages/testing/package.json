@@ -23,6 +23,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@ai-sdk/provider": "4.0.35",
     "@docpilot/shared": "workspace:*",
     "@faker-js/faker": "10.6.0",
     "ai": "7.0.158"
