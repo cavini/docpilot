@@ -8,6 +8,17 @@
 
 export { EMBEDDING_DIMENSIONS, chunks, type ChunkRow, type NewChunkRow } from './chunks.js';
 export {
+  conversations,
+  messageOutcome,
+  messageRole,
+  messages,
+  type ConversationRow,
+  type MessageRow,
+  type NewConversationRow,
+  type NewMessageRow,
+  type StoredCitation,
+} from './conversations.js';
+export {
   documentLanguage,
   documentStatus,
   documents,

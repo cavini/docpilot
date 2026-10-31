@@ -29,6 +29,13 @@
       "when": 1793400000000,
       "tag": "0003_restore_tsv_index",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793428119312,
+      "tag": "0004_conversations_and_messages",
+      "breakpoints": true
     }
   ]
 }
