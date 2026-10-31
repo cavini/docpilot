@@ -34,6 +34,24 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   journeys with an accessibility check.
 - GitHub Actions workflow running all of it, with no secrets.
 
+### Added in M1
+
+- Document upload (`POST /documents`) for PDF, Markdown and plain text, with
+  size and type validation, content-hash deduplication, and storage of the
+  original.
+- Parsers for all three formats. PDFs are extracted page by page so citations
+  can name a page; Markdown keeps its heading hierarchy.
+- Structure-aware chunking with overlap, counted in real tokens, keeping code
+  blocks whole where they fit.
+- Batched embedding through the AI SDK, with retries and a usage ledger
+  recording tokens, cost and latency for every call.
+- A BullMQ ingestion pipeline with retries, backoff and idempotent re-runs,
+  runnable inside the API or as its own process.
+- Live ingestion progress over WebSockets, scoped per document.
+- `documents`, `chunks` and `llm_usage` tables, with an HNSW index for vector
+  search and a generated `tsvector` for keyword search.
+- A demo corpus in English and Portuguese, and `pnpm seed`.
+
 ### Fixed
 
 - Redis reported as down on every fresh process: with the offline queue
@@ -44,3 +62,11 @@ this project adheres to [Semantic Versioning](https://semver.org/).
   regenerate-and-diff check in CI could never pass.
 - Coverage measured with V8 rather than Babel instrumentation, which had been
   counting unreachable branches emitted for decorators.
+- Chunks were invisible to search by their own section heading: the passage
+  under "Authentication" never contains the word, so searching for it returned
+  nothing. The heading path now reaches both the keyword index and the embedded
+  text.
+- `.env` was never loaded, so `pnpm dev` started the web app and left the API
+  dead on a missing `DATABASE_URL`.
+- A parser failure threw synchronously from a method typed as returning a
+  promise, so a caller using `.catch` would have missed it.

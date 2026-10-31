@@ -1,6 +1,6 @@
 # Spec: Document upload
 
-Status: accepted Milestone: M1
+Status: implemented Milestone: M1
 
 ## Problem and goal
 
