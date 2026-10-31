@@ -1,6 +1,6 @@
 # Spec: Streaming chat
 
-Status: accepted Milestone: M3
+Status: implemented Milestone: M3
 
 ## Problem and goal
 

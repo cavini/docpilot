@@ -2,6 +2,12 @@
  * Tailwind and the design tokens both come from the design system, so the web
  * app and Storybook render components against exactly the same palette.
  */
+/*
+ * Syntax highlighting for code blocks inside an answer.
+ * github-dark reads well against both themes' surfaces, and shipping one
+ * stylesheet avoids a flash when the reader's theme is resolved.
+ */
+@import 'highlight.js/styles/github-dark.css';
 @import '@docpilot/ui/styles';
 
 /* Tailwind v4 scans for classes relative to this file. */

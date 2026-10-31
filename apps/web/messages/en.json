@@ -70,5 +70,29 @@
       "english": "English",
       "portuguese": "Portuguese"
     }
+  },
+  "chat": {
+    "heading": "Ask",
+    "newConversation": "New conversation",
+    "transcriptLabel": "Conversation",
+    "you": "You",
+    "assistant": "DocPilot",
+    "thinking": "Searching the documents…",
+    "failed": "The answer could not be completed.",
+    "retry": "Ask again",
+    "send": "Send",
+    "stop": "Stop",
+    "questionLabel": "Your question",
+    "placeholder": "Ask about your documents…",
+    "empty": {
+      "title": "Ask a question",
+      "description": "Answers come only from the documents above, with citations back to the passage they came from."
+    },
+    "sources": {
+      "title": "Sources",
+      "close": "Close sources",
+      "page": "Page {page}",
+      "pageRange": "Pages {from}–{to}"
+    }
   }
 }

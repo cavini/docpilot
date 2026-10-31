@@ -2,21 +2,21 @@ import { useTranslations } from 'next-intl';
 
 import { LocaleSwitcher } from '@/components/locale-switcher';
 import { SystemStatus } from '@/components/system-status';
+import { ChatView } from '@/features/chat/chat-view';
 import { DocumentLibrary } from '@/features/documents/document-library';
 
 /**
- * The document library, which is the product's starting point.
+ * The product: a corpus, and a conversation about it.
  *
- * Everything here works with no API key and no model: add a document, watch it
- * become searchable, remove it. The chat interface links from the top rather
- * than being the landing page, because a chat with an empty corpus can only
- * refuse to answer.
+ * One page rather than two, because the two halves are read together — a
+ * reader adding a document wants to ask about it straight away, and a reader
+ * getting an unhelpful answer wants to see what is actually in the corpus.
  */
 export default function HomePage() {
   const t = useTranslations('home');
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-12">
+    <main className="mx-auto flex max-w-5xl flex-col gap-10 px-6 py-12">
       <header className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-semibold tracking-tight">{t('heading')}</h1>
@@ -24,6 +24,8 @@ export default function HomePage() {
         </div>
         <LocaleSwitcher />
       </header>
+
+      <ChatView />
 
       <DocumentLibrary />
 
