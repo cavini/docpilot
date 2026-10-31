@@ -6,14 +6,20 @@ import { createChatModel } from '../llm/provider.factory.js';
 import { RetrievalModule } from '../retrieval/retrieval.module.js';
 import { AskController } from './ask.controller.js';
 import { AskService } from './ask.service.js';
+import { ChatController } from './chat.controller.js';
+import { ChatService } from './chat.service.js';
+import { ConversationsController } from './conversations.controller.js';
+import { ConversationsService } from './conversations.service.js';
 import { CHAT_MODEL_FACTORY, type ChatModelFactory } from './chat.tokens.js';
 
-/** Answering questions from the corpus. */
+/** Answering questions from the corpus, one-shot and conversational. */
 @Module({
   imports: [RetrievalModule],
-  controllers: [AskController],
+  controllers: [AskController, ChatController, ConversationsController],
   providers: [
     AskService,
+    ChatService,
+    ConversationsService,
     {
       provide: CHAT_MODEL_FACTORY,
       inject: [ENV],
@@ -23,6 +29,6 @@ import { CHAT_MODEL_FACTORY, type ChatModelFactory } from './chat.tokens.js';
           createChatModel(env, mockResponse),
     },
   ],
-  exports: [AskService],
+  exports: [AskService, ChatService, ConversationsService],
 })
 export class ChatModule {}
