@@ -53,6 +53,7 @@ export class AgentController {
       question: body.question,
       ...(body.conversationId === undefined ? {} : { conversationId: body.conversationId }),
       ...(body.documentIds === undefined ? {} : { documentIds: body.documentIds }),
+      ...(body.messages === undefined ? {} : { resumeFrom: body.messages }),
       ...(typeof id === 'string' ? { requestId: id } : {}),
       signal: controller.signal,
     });

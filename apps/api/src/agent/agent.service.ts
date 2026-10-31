@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   type ToolSet,
+  type UIMessage,
   type UIMessageChunk,
+  convertToModelMessages,
   createUIMessageStream,
   stepCountIs,
   streamText,
@@ -53,6 +55,15 @@ export interface AgentOptions {
   documentIds?: string[];
   requestId?: string;
   signal?: AbortSignal;
+  /**
+   * The turn so far, when resuming one that paused for approval.
+   *
+   * The reader's answer lives inside the message parts — that is where the
+   * AI SDK puts it, and there is nowhere else to carry it. Used only to
+   * resume the paused loop; the conversation's history still comes from the
+   * store, so this cannot rewrite what was said.
+   */
+  resumeFrom?: unknown[];
 }
 
 /**
@@ -158,7 +169,7 @@ export class AgentService {
     let pending: PendingTurn | undefined;
 
     return createUIMessageStream({
-      execute: ({ writer }) => {
+      execute: async ({ writer }) => {
         // Before the data part, so it belongs to this message rather than to
         // one of its own.
         writer.write({ type: 'start' });
@@ -168,6 +179,23 @@ export class AgentService {
         });
 
         const history = renderHistory(buildHistory(previous));
+
+        /*
+         * Resuming a paused turn means replaying it to the model, including
+         * the approval the reader just answered. The SDK carries that answer
+         * inside the message parts, so the messages are the only way to get
+         * it back — `convertToModelMessages` turns them into the model's own
+         * format, with the tools so it knows what each call was.
+         */
+        const resumed =
+          options.resumeFrom === undefined
+            ? undefined
+            : await convertToModelMessages(options.resumeFrom as UIMessage[], {
+                tools,
+                // A turn can pause mid-call; dropping the incomplete one is
+                // better than failing the resume over it.
+                ignoreIncompleteToolCalls: true,
+              });
         // The mock provider answers directly unless it is scripted otherwise,
         // which would make /agent look identical to /chat and hide the one
         // thing it adds. Scripted to search once and then answer, so the tool
@@ -181,7 +209,11 @@ export class AgentService {
           model,
           tools,
           instructions: AGENT_SYSTEM_PROMPT,
-          prompt: history === '' ? question : `${history}\n\nQuestion: ${question}`,
+          // Resuming replaces the prompt with the turn so far; starting fresh
+          // uses the question and the stored history.
+          ...(resumed === undefined
+            ? { prompt: history === '' ? question : `${history}\n\nQuestion: ${question}` }
+            : { messages: resumed }),
           maxOutputTokens: this.env.MAX_OUTPUT_TOKENS,
           // The bound that stops a confused model running until the request
           // times out.

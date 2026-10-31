@@ -796,6 +796,15 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          "messages": {
+            "type": "array",
+            "description": "The turn so far, when resuming one that paused for approval.",
+            "maxItems": 50,
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
           }
         },
         "required": [
