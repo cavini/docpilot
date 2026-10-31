@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
+  ApiAcceptedResponse,
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
@@ -25,6 +26,7 @@ import {
 import { type Response } from 'express';
 
 import { InvalidRequestError } from '../common/errors/index.js';
+import { ApiErrors } from '../common/http/api-errors.decorator.js';
 import { toDocumentResponse } from './document.mapper.js';
 import { DocumentsService } from './documents.service.js';
 import { DocumentPageDto, DocumentResponseDto } from './documents.response.js';
@@ -59,6 +61,7 @@ export class DocumentsController {
     description: 'These bytes were already uploaded; the existing document is returned',
     type: DocumentResponseDto,
   })
+  @ApiErrors(400, 413, 415)
   @UseInterceptors(FileInterceptor('file'))
   async upload(
     @UploadedFile() file: UploadedFileShape | undefined,
@@ -95,6 +98,7 @@ export class DocumentsController {
   @Get(':id')
   @ApiOperation({ summary: 'Read one document and its ingestion status' })
   @ApiOkResponse({ type: DocumentResponseDto })
+  @ApiErrors(404)
   async get(@Param('id', ParseUUIDPipe) id: string): Promise<DocumentResponseDto> {
     return toDocumentResponse(await this.documents.get(id));
   }
@@ -104,6 +108,7 @@ export class DocumentsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a document and everything derived from it' })
   @ApiNoContentResponse({ description: 'The document is gone' })
+  @ApiErrors(404)
   async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     await this.documents.remove(id);
   }
@@ -117,7 +122,8 @@ export class DocumentsController {
   @Post(':id/retry')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: 'Reprocess a document that failed' })
-  @ApiOkResponse({ type: DocumentResponseDto })
+  @ApiAcceptedResponse({ type: DocumentResponseDto })
+  @ApiErrors(404, 409)
   async retry(@Param('id', ParseUUIDPipe) id: string): Promise<DocumentResponseDto> {
     return toDocumentResponse(await this.documents.retry(id));
   }
