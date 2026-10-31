@@ -17,7 +17,7 @@ export class ErrorBodyDto {
    * Identifier of the request that failed. Quote it in a bug report: it
    * appears on every log line for the request.
    */
-  @ApiProperty({ example: '01K8Z2M4Q7' })
+  @ApiProperty({ example: '6f6cf7c5-d7c3-4281-8c89-c67912abade4' })
   requestId: string;
 
   /** Extra context, present only when it helps the caller act. */

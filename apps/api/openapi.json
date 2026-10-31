@@ -106,6 +106,36 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Larger than `MAX_UPLOAD_MB`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Not a type the API can read.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "summary": "Upload a PDF, Markdown or plain text document",
@@ -174,6 +204,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "No such resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "summary": "Read one document and its ingestion status",
@@ -196,6 +236,16 @@
         "responses": {
           "204": {
             "description": "The document is gone"
+          },
+          "404": {
+            "description": "No such resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "summary": "Delete a document and everything derived from it",
@@ -218,7 +268,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "202": {
             "description": "",
             "content": {
               "application/json": {
@@ -227,11 +277,135 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "No such resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the resource’s current state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
           }
         },
         "summary": "Reprocess a document that failed",
         "tags": [
           "documents"
+        ]
+      }
+    },
+    "/search": {
+      "post": {
+        "operationId": "SearchController_search",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ranked passages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A dependency is unavailable. Retrying is reasonable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Search the corpus with hybrid retrieval",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/ask": {
+      "post": {
+        "operationId": "AskController_answer",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The answer and its citations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A dependency is unavailable. Retrying is reasonable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Answer a question from the documents, with citations",
+        "tags": [
+          "ask"
         ]
       }
     }
@@ -449,6 +623,47 @@
           "updatedAt"
         ]
       },
+      "ErrorBodyDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable machine-readable identifier for the failure. Branch on this rather\nthan on the message, which may be reworded.",
+            "example": "not_found"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable explanation. Never contains credentials.",
+            "example": "document 7f3a was not found"
+          },
+          "requestId": {
+            "type": "string",
+            "description": "Identifier of the request that failed. Quote it in a bug report: it\nappears on every log line for the request.",
+            "example": "6f6cf7c5-d7c3-4281-8c89-c67912abade4"
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Extra context, present only when it helps the caller act."
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "requestId"
+        ]
+      },
+      "ErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBodyDto"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
       "DocumentPageDto": {
         "type": "object",
         "properties": {
@@ -467,6 +682,246 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "SearchRequestDto": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "What to search for.",
+            "example": "how do I authenticate?"
+          },
+          "topK": {
+            "type": "number",
+            "description": "How many results to return. Defaults to `RETRIEVAL_TOP_K`.",
+            "minimum": 1,
+            "maximum": 50,
+            "example": 8
+          },
+          "documentIds": {
+            "description": "Restrict the search to these documents. Omit to search everything.",
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "SearchResultDto": {
+        "type": "object",
+        "properties": {
+          "chunkId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentTitle": {
+            "type": "string",
+            "example": "lumen-api"
+          },
+          "content": {
+            "type": "string",
+            "description": "The passage itself."
+          },
+          "headingPath": {
+            "type": "string",
+            "nullable": true,
+            "description": "Where in the document this passage sits.",
+            "example": "Lumen API > Authentication"
+          },
+          "pageStart": {
+            "type": "number",
+            "nullable": true,
+            "example": 3
+          },
+          "pageEnd": {
+            "type": "number",
+            "nullable": true,
+            "example": 3
+          },
+          "score": {
+            "type": "number",
+            "description": "Fused relevance score. Comparable within one search only — it is a sum of\nreciprocal ranks, not a probability.",
+            "example": 0.0323
+          },
+          "vectorRank": {
+            "type": "number",
+            "nullable": true,
+            "description": "Rank in the vector search, or null if that search did not find it.",
+            "example": 1
+          },
+          "keywordRank": {
+            "type": "number",
+            "nullable": true,
+            "description": "Rank in the keyword search, or null if that search did not find it.",
+            "example": 3
+          }
+        },
+        "required": [
+          "chunkId",
+          "documentId",
+          "documentTitle",
+          "content",
+          "score"
+        ]
+      },
+      "SearchResponseDto": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchResultDto"
+            }
+          },
+          "tookMs": {
+            "type": "number",
+            "description": "How long the search took, in milliseconds.",
+            "example": 41
+          },
+          "cached": {
+            "type": "boolean",
+            "description": "Whether the query embedding came from cache rather than the provider.",
+            "example": false
+          }
+        },
+        "required": [
+          "results",
+          "tookMs",
+          "cached"
+        ]
+      },
+      "AskRequestDto": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "The question to answer from the corpus.",
+            "example": "How do I authenticate?"
+          },
+          "topK": {
+            "type": "number",
+            "description": "How many passages to retrieve. Defaults to `RETRIEVAL_TOP_K`.",
+            "minimum": 1,
+            "maximum": 20,
+            "example": 8
+          },
+          "documentIds": {
+            "description": "Restrict the answer to these documents.",
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "question"
+        ]
+      },
+      "CitationDto": {
+        "type": "object",
+        "properties": {
+          "n": {
+            "type": "number",
+            "description": "The number as it appears in the answer text.",
+            "example": 1
+          },
+          "chunkId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentTitle": {
+            "type": "string",
+            "example": "lumen-api"
+          },
+          "headingPath": {
+            "type": "string",
+            "nullable": true,
+            "example": "Lumen API > Authentication"
+          },
+          "pageStart": {
+            "type": "number",
+            "nullable": true,
+            "example": 3
+          },
+          "pageEnd": {
+            "type": "number",
+            "nullable": true,
+            "example": 3
+          },
+          "snippet": {
+            "type": "string",
+            "description": "The passage itself, for display beside the answer."
+          }
+        },
+        "required": [
+          "n",
+          "chunkId",
+          "documentId",
+          "documentTitle",
+          "snippet"
+        ]
+      },
+      "AnswerUsageDto": {
+        "type": "object",
+        "properties": {
+          "inputTokens": {
+            "type": "number",
+            "example": 912
+          },
+          "outputTokens": {
+            "type": "number",
+            "example": 64
+          },
+          "costUsd": {
+            "type": "number",
+            "example": 0.001256
+          }
+        },
+        "required": [
+          "inputTokens",
+          "outputTokens",
+          "costUsd"
+        ]
+      },
+      "AskResponseDto": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string",
+            "description": "The answer, with citation markers like `[1]` placed after the claims they\nsupport. A marker the model invented has been removed.",
+            "example": "Call POST /auth/token with your client id and secret to obtain a bearer token [1]."
+          },
+          "citations": {
+            "description": "The passages the answer drew on, in the order they are first cited.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CitationDto"
+            }
+          },
+          "usage": {
+            "$ref": "#/components/schemas/AnswerUsageDto"
+          }
+        },
+        "required": [
+          "answer",
+          "citations",
+          "usage"
         ]
       }
     }

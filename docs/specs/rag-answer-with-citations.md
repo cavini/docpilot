@@ -1,6 +1,6 @@
 # Spec: Answers with citations
 
-Status: accepted Milestone: M2
+Status: implemented Milestone: M2
 
 ## Problem and goal
 
@@ -110,8 +110,14 @@ answer says so and no citation is fabricated.
 the model is not called at all and the "do not know" answer is returned
 directly.
 
-**AC8.** Given a question in Portuguese, when it is answered, then the answer is
-in Portuguese.
+**AC8.** Given a question in Portuguese, when the prompt is built, then it
+instructs the model to answer in the language of the question.
+
+Deliberately phrased as a property of the prompt rather than of the answer. The
+answer's language is a model behaviour, and the only honest way to assert it is
+to run a real model against questions in both languages — which is what M7's
+eval set does, with Portuguese cases of its own. Asserting it against the
+deterministic mock would test the mock.
 
 **AC9.** Given a context block, when the prompt is built, then it carries its
 number, document title and heading path, so a citation can be rendered without a
@@ -158,16 +164,23 @@ own text, not the heading-prefixed text used for embedding.
 
 ## Test plan
 
-| AC                 | Level                | File                                    |
-| ------------------ | -------------------- | --------------------------------------- |
-| AC3–AC5, AC15      | unit                 | `apps/api/src/chat/citations.spec.ts`   |
-| AC9                | unit                 | `apps/api/src/chat/prompt.spec.ts`      |
-| AC1, AC2, AC6, AC7 | unit with mock model | `apps/api/src/chat/ask.service.spec.ts` |
-| AC8, AC10, AC11    | integration          | `apps/api/test/integration/ask.spec.ts` |
-| AC12–AC14          | API e2e              | `apps/api/test/e2e/ask.spec.ts`         |
+| AC                           | Level                | File                                    |
+| ---------------------------- | -------------------- | --------------------------------------- |
+| AC2–AC5, AC15                | unit                 | `apps/api/src/chat/citations.spec.ts`   |
+| AC8, AC9                     | unit                 | `apps/api/src/chat/prompt.spec.ts`      |
+| AC1–AC3, AC6, AC7, AC10–AC15 | unit with mock model | `apps/api/src/chat/ask.service.spec.ts` |
+| AC1, AC2, AC11–AC13          | API e2e              | `apps/api/test/e2e/ask.spec.ts`         |
+| response shape               | contract (Ajv)       | `apps/api/test/contract/ask.spec.ts`    |
 
-The model is the deterministic mock throughout, scripted to return specific
-answers, so citation handling is tested exactly rather than approximately.
+The model is a **scripted** mock throughout — told exactly what to return, so
+every citation case is provoked on purpose rather than hoped for. Testing
+"strips a citation the model invented" needs a model that invents one, which is
+not something a real provider can be asked for on demand.
+
+The one thing the mock cannot establish is AC8: whether the answer actually
+comes back in the question's language. That is model behaviour, and it is
+measured against a real provider in M7's eval set. What is asserted here is the
+instruction, which is the part this repository controls.
 
 ## Open questions
 

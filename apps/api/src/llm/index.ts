@@ -8,6 +8,7 @@ export {
   type ModelPrice,
 } from './pricing.js';
 export {
+  CANNED_MOCK_ANSWER,
   createChatModel,
   createEmbeddingModel,
   type ResolvedEmbeddingModel,

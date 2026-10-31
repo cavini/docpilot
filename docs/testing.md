@@ -32,6 +32,10 @@ refactor, docs.**
    and check each line is actually enforced, instead of taking a coverage
    percentage on trust.
 
+   Contract tests are the one level that carries no numbers — what they assert
+   belongs to the published spec rather than to a feature, and a local `AC3`
+   there would collide with a feature spec's `AC3` and break the lookup.
+
 4. **Close the spec.** Status `implemented`, test plan pointing at the real
    files, documentation updated in the same commit or the next one.
 
@@ -62,7 +66,9 @@ and most specific failures report first.
   retrieval SQL, index usage, queue processors, cache invalidation.
 - **API end-to-end** when the behaviour depends on the assembled application:
   status codes, the error envelope, validation, the streaming protocol.
-- **Contract** when a client depends on the exact response shape.
+- **Contract** when a client depends on the exact response shape — including
+  **error** shapes: the spec promises `{ error: { code, message, requestId } }`,
+  and a promise a test does not check is a comment.
 - **Component (browser)** when the behaviour depends on real layout or focus.
 - **Browser end-to-end** when the behaviour spans pages or services.
 

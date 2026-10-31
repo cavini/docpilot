@@ -85,6 +85,12 @@ export const envSchema = z
     CHUNK_SIZE_TOKENS: integerFromString(500),
     CHUNK_OVERLAP_TOKENS: z.coerce.number().int().nonnegative().default(75),
 
+    // Retrieval.
+    RETRIEVAL_TOP_K: integerFromString(8),
+    CACHE_TTL_SECONDS: integerFromString(3600),
+    MAX_QUESTION_LENGTH: integerFromString(1000),
+    MAX_OUTPUT_TOKENS: integerFromString(1024),
+
     // Ingestion limits.
     MAX_UPLOAD_MB: integerFromString(20),
 

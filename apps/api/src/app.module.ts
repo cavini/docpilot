@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { type DynamicModule, Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
+import { ChatModule } from './chat/chat.module.js';
 import { CommonModule } from './common/common.module.js';
 import { ConfigModule } from './config/config.module.js';
 import { DocumentsModule } from './documents/documents.module.js';
@@ -13,6 +14,7 @@ import { HealthModule } from './health/health.module.js';
 import { IngestionModule } from './ingestion/ingestion.module.js';
 import { RUN_WORKER } from './ingestion/worker.tokens.js';
 import { LlmModule } from './llm/llm.module.js';
+import { RetrievalModule } from './retrieval/retrieval.module.js';
 import { LoggerModule } from './observability/logger.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { StorageModule } from './storage/storage.module.js';
@@ -45,6 +47,8 @@ import { StorageModule } from './storage/storage.module.js';
     LlmModule,
     IngestionModule,
     DocumentsModule,
+    RetrievalModule,
+    ChatModule,
   ],
 })
 export class AppModule {
