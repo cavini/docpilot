@@ -9,7 +9,7 @@ it cannot drift. Run `pnpm dev` and open <http://localhost:3001/docs> for the
 browsable version.
 
 This page covers what is implemented. Endpoints arriving in later milestones
-(streaming chat, tools, GraphQL) are documented when they ship.
+(tools, GraphQL, structured extraction) are documented when they ship.
 
 ## Conventions
 
@@ -398,6 +398,137 @@ Set `LLM_PROVIDER=mock` to exercise the whole path with no key and no cost. The
 mock returns an obviously canned answer with a real citation, through the **same
 factory and the same call path** as a live provider.
 
+### `POST /chat`
+
+The same answer as `/ask`, streamed, in a conversation that remembers the
+previous turns.
+
+```bash
+curl -N -X POST localhost:3001/chat \
+  -H 'content-type: application/json' \
+  -d '{"question": "How do I verify a webhook signature?"}'
+```
+
+The response is **server-sent events** carrying the AI SDK's UI message stream,
+not JSON:
+
+```
+data: {"type":"start"}
+
+data: {"type":"data-conversation","data":{"conversationId":"7f3a9c0e-…"}}
+
+data: {"type":"data-citations","data":{"citations":[{"n":1,…}]}}
+
+data: {"type":"text-start","id":"t1"}
+
+data: {"type":"text-delta","id":"t1","delta":"Every delivery "}
+
+…
+
+data: [DONE]
+```
+
+| Field            | Notes                                       |
+| ---------------- | ------------------------------------------- |
+| `question`       | Required, non-empty                         |
+| `conversationId` | Optional; omit to start one                 |
+| `topK`           | 1–20, default 8                             |
+| `documentIds`    | Optional; answers from those documents only |
+
+Two custom data parts ride alongside the text:
+
+| Part                | When                         | Payload                     |
+| ------------------- | ---------------------------- | --------------------------- |
+| `data-conversation` | first, once                  | `{ conversationId }`        |
+| `data-citations`    | after retrieval, before text | `{ citations: Citation[] }` |
+
+**`start` comes first, before either of them.** A data part written ahead of the
+message it belongs to belongs to no message, and a client renders it as a
+second, empty one. This cost a visible bug: an empty assistant bubble above
+every answer.
+
+**Citations arrive before any text** because the passages are known before
+generation starts. The sources panel can render while the answer is still being
+written, and a citation chip is clickable the moment its marker appears.
+
+Consume it with the AI SDK's `useChat` rather than parsing it by hand — the
+protocol is the SDK's on both ends, which is the point of using it.
+
+#### What fails where
+
+Everything that can fail **before** generation starts is an ordinary JSON error
+with a real status code: an empty or over-long question is 400, an unknown
+`conversationId` is 404. Once the stream is open the status is already 200, so a
+failure after that can only be an error part inside it.
+
+A partial answer is **kept**, marked `stopped` or `failed`. Closing the
+connection aborts generation, which also stops the provider billing.
+
+### `GET /conversations`
+
+Most recently used first — sorted on `updatedAt`, so a conversation returned to
+this morning is above one started last week and abandoned. Same cursor
+pagination as documents.
+
+```json
+{
+  "items": [
+    {
+      "id": "7f3a9c0e-…",
+      "title": "How do I verify a webhook signature?",
+      "createdAt": "2026-10-31T06:40:56.169Z",
+      "updatedAt": "2026-10-31T06:41:26.012Z"
+    }
+  ],
+  "nextCursor": null
+}
+```
+
+The title is derived from the first question, shortened at a word boundary.
+
+### `GET /conversations/{id}`
+
+The conversation and its turns, oldest first. **404** if it does not exist.
+
+```json
+{
+  "id": "7f3a9c0e-…",
+  "title": "How do I verify a webhook signature?",
+  "messages": [
+    {
+      "role": "user",
+      "content": "How do I verify…",
+      "ordinal": 0,
+      "outcome": null,
+      "citations": []
+    },
+    {
+      "role": "assistant",
+      "content": "Compare an HMAC-SHA256 of the raw body [1].",
+      "ordinal": 1,
+      "outcome": "complete",
+      "citations": [{ "n": 1, "chunkId": "…", "snippet": "…" }]
+    }
+  ]
+}
+```
+
+`ordinal` gives the order explicitly: two rows written in the same millisecond
+have no defined order, and a transcript with its turns swapped is nonsense.
+
+`outcome` is `complete`, `stopped` or `failed`, and `null` on a question. It is
+stored rather than inferred because the three are indistinguishable from the
+text alone.
+
+The `citations` are a **snapshot** of what the answer rested on, stored with the
+message. They survive the document being deleted on purpose — a reader opening
+an old conversation should see what they were shown at the time, not an answer
+with its evidence silently removed.
+
+### `DELETE /conversations/{id}`
+
+**204**, and the turns go with it by foreign key. **404** if unknown.
+
 ## WebSocket events
 
 Socket.IO on namespace `/ingestion`. A client joins one room per document, so an
@@ -436,16 +567,15 @@ client that misses one, is in [`realtime.md`](./realtime.md).
 
 ## Rate limits
 
-There are none yet. The endpoint that needs one is `/ask`, where each request
-costs money, and the limit belongs with the authentication that identifies who
-to limit — both arrive together in M8. Until then the only ceiling is
-`MAX_UPLOAD_MB`.
+There are none yet. The endpoints that need one are `/ask` and `/chat`, where
+each request costs money, and the limit belongs with the authentication that
+identifies who to limit — both arrive together in M8. Until then the only
+ceiling is `MAX_UPLOAD_MB`.
 
 ## Not yet implemented
 
-| Endpoint              | Milestone | What it adds                            |
-| --------------------- | --------- | --------------------------------------- |
-| `POST /chat`          | M3        | Streamed answers over SSE, with history |
-| Tool calling          | M4        | The model acting, not just answering    |
-| `POST /graphql`       | M5        | Behind `FF_GRAPHQL`                     |
-| Structured extraction | M6        | Schema-constrained output               |
+| Endpoint              | Milestone | What it adds                         |
+| --------------------- | --------- | ------------------------------------ |
+| Tool calling          | M4        | The model acting, not just answering |
+| `POST /graphql`       | M5        | Behind `FF_GRAPHQL`                  |
+| Structured extraction | M6        | Schema-constrained output            |
