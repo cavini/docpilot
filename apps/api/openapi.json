@@ -63,6 +63,346 @@
         ]
       }
     },
+    "/agent": {
+      "post": {
+        "operationId": "AgentController_run",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A UI message stream (text/event-stream). Carries the same parts as /chat, plus the SDK tool parts and a tool-approval-request where approval is needed.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A dependency is unavailable. Retrying is reasonable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Answer a question, calling tools where they help",
+        "tags": [
+          "agent"
+        ]
+      }
+    },
+    "/ask": {
+      "post": {
+        "operationId": "AskController_answer",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The answer and its citations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A dependency is unavailable. Retrying is reasonable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Answer a question from the documents, with citations",
+        "tags": [
+          "ask"
+        ]
+      }
+    },
+    "/chat": {
+      "post": {
+        "operationId": "ChatController_chatStream",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A UI message stream (text/event-stream). Carries a `data-conversation` part first, a `data-citations` part before any text, then the answer.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A dependency is unavailable. Retrying is reasonable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Answer a question in a conversation, streamed",
+        "tags": [
+          "chat"
+        ]
+      }
+    },
+    "/conversations": {
+      "get": {
+        "operationId": "ConversationsController_list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationPageDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List conversations, most recently used first",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/conversations/{id}": {
+      "get": {
+        "operationId": "ConversationsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read a conversation and its turns",
+        "tags": [
+          "conversations"
+        ]
+      },
+      "delete": {
+        "operationId": "ConversationsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The conversation is gone"
+          },
+          "404": {
+            "description": "No such resource.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Delete a conversation and its turns",
+        "tags": [
+          "conversations"
+        ]
+      }
+    },
+    "/search": {
+      "post": {
+        "operationId": "SearchController_search",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ranked passages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A dependency is unavailable. Retrying is reasonable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Search the corpus with hybrid retrieval",
+        "tags": [
+          "search"
+        ]
+      }
+    },
     "/documents": {
       "post": {
         "operationId": "DocumentsController_upload",
@@ -304,284 +644,6 @@
           "documents"
         ]
       }
-    },
-    "/search": {
-      "post": {
-        "operationId": "SearchController_search",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SearchRequestDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Ranked passages",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SearchResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "A dependency is unavailable. Retrying is reasonable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Search the corpus with hybrid retrieval",
-        "tags": [
-          "search"
-        ]
-      }
-    },
-    "/ask": {
-      "post": {
-        "operationId": "AskController_answer",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AskRequestDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "The answer and its citations",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AskResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "A dependency is unavailable. Retrying is reasonable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Answer a question from the documents, with citations",
-        "tags": [
-          "ask"
-        ]
-      }
-    },
-    "/chat": {
-      "post": {
-        "operationId": "ChatController_chatStream",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChatRequestDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "A UI message stream (text/event-stream). Carries a `data-conversation` part first, a `data-citations` part before any text, then the answer.",
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No such resource.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "A dependency is unavailable. Retrying is reasonable.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Answer a question in a conversation, streamed",
-        "tags": [
-          "chat"
-        ]
-      }
-    },
-    "/conversations": {
-      "get": {
-        "operationId": "ConversationsController_list",
-        "parameters": [
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "cursor",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationPageDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "List conversations, most recently used first",
-        "tags": [
-          "conversations"
-        ]
-      }
-    },
-    "/conversations/{id}": {
-      "get": {
-        "operationId": "ConversationsController_get",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationDto"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "No such resource.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Read a conversation and its turns",
-        "tags": [
-          "conversations"
-        ]
-      },
-      "delete": {
-        "operationId": "ConversationsController_remove",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "The conversation is gone"
-          },
-          "404": {
-            "description": "No such resource.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "Delete a conversation and its turns",
-        "tags": [
-          "conversations"
-        ]
-      }
     }
   },
   "info": {
@@ -706,95 +768,38 @@
           "dependencies"
         ]
       },
-      "DocumentResponseDto": {
+      "ChatRequestDto": {
         "type": "object",
         "properties": {
-          "id": {
+          "question": {
             "type": "string",
+            "description": "The question to answer.",
+            "example": "How do I authenticate?"
+          },
+          "conversationId": {
+            "type": "string",
+            "description": "Conversation to continue. Omit to start one.",
             "format": "uuid"
           },
-          "title": {
-            "type": "string",
-            "description": "Display name, the filename without its extension.",
-            "example": "billing-api"
-          },
-          "sourceFilename": {
-            "type": "string",
-            "description": "The name the file was uploaded under.",
-            "example": "billing-api.pdf"
-          },
-          "mimeType": {
-            "type": "string",
-            "example": "application/pdf"
-          },
-          "sizeBytes": {
+          "topK": {
             "type": "number",
-            "example": 418233
+            "description": "How many passages to retrieve. Defaults to `RETRIEVAL_TOP_K`.",
+            "minimum": 1,
+            "maximum": 20,
+            "example": 8
           },
-          "status": {
-            "type": "string",
-            "description": "Where the document is in the pipeline.",
-            "enum": [
-              "queued",
-              "parsing",
-              "chunking",
-              "embedding",
-              "ready",
-              "failed"
-            ],
-            "example": "ready"
-          },
-          "progress": {
-            "type": "number",
-            "description": "How far through ingestion, from 0 to 100.",
-            "example": 100
-          },
-          "language": {
-            "type": "string",
-            "nullable": true,
-            "description": "Detected language, which decides the text-search stemmer.",
-            "enum": [
-              "english",
-              "portuguese"
-            ]
-          },
-          "error": {
-            "type": "string",
-            "nullable": true,
-            "description": "Why ingestion failed, when it did.",
-            "example": null
-          },
-          "pageCount": {
-            "type": "number",
-            "nullable": true,
-            "description": "Pages, for formats that have them.",
-            "example": 12
-          },
-          "chunkCount": {
-            "type": "number",
-            "description": "Retrievable passages stored for this document.",
-            "example": 48
-          },
-          "createdAt": {
-            "type": "string",
-            "example": "2026-10-30T22:14:03.118Z"
-          },
-          "updatedAt": {
-            "type": "string",
-            "example": "2026-10-30T22:14:09.441Z"
+          "documentIds": {
+            "description": "Restrict retrieval to these documents. Omit to search everything.",
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         },
         "required": [
-          "id",
-          "title",
-          "sourceFilename",
-          "mimeType",
-          "sizeBytes",
-          "status",
-          "progress",
-          "chunkCount",
-          "createdAt",
-          "updatedAt"
+          "question"
         ]
       },
       "ErrorBodyDto": {
@@ -836,142 +841,6 @@
         },
         "required": [
           "error"
-        ]
-      },
-      "DocumentPageDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DocumentResponseDto"
-            }
-          },
-          "nextCursor": {
-            "type": "string",
-            "nullable": true,
-            "description": "Pass back as `cursor` to fetch the next page. Null when this is the last.",
-            "example": "2026-10-30T22:14:03.118Z"
-          }
-        },
-        "required": [
-          "items"
-        ]
-      },
-      "SearchRequestDto": {
-        "type": "object",
-        "properties": {
-          "query": {
-            "type": "string",
-            "description": "What to search for.",
-            "example": "how do I authenticate?"
-          },
-          "topK": {
-            "type": "number",
-            "description": "How many results to return. Defaults to `RETRIEVAL_TOP_K`.",
-            "minimum": 1,
-            "maximum": 50,
-            "example": 8
-          },
-          "documentIds": {
-            "description": "Restrict the search to these documents. Omit to search everything.",
-            "maxItems": 50,
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        },
-        "required": [
-          "query"
-        ]
-      },
-      "SearchResultDto": {
-        "type": "object",
-        "properties": {
-          "chunkId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "documentId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "documentTitle": {
-            "type": "string",
-            "example": "lumen-api"
-          },
-          "content": {
-            "type": "string",
-            "description": "The passage itself."
-          },
-          "headingPath": {
-            "type": "string",
-            "nullable": true,
-            "description": "Where in the document this passage sits.",
-            "example": "Lumen API > Authentication"
-          },
-          "pageStart": {
-            "type": "number",
-            "nullable": true,
-            "example": 3
-          },
-          "pageEnd": {
-            "type": "number",
-            "nullable": true,
-            "example": 3
-          },
-          "score": {
-            "type": "number",
-            "description": "Fused relevance score. Comparable within one search only — it is a sum of\nreciprocal ranks, not a probability.",
-            "example": 0.0323
-          },
-          "vectorRank": {
-            "type": "number",
-            "nullable": true,
-            "description": "Rank in the vector search, or null if that search did not find it.",
-            "example": 1
-          },
-          "keywordRank": {
-            "type": "number",
-            "nullable": true,
-            "description": "Rank in the keyword search, or null if that search did not find it.",
-            "example": 3
-          }
-        },
-        "required": [
-          "chunkId",
-          "documentId",
-          "documentTitle",
-          "content",
-          "score"
-        ]
-      },
-      "SearchResponseDto": {
-        "type": "object",
-        "properties": {
-          "results": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SearchResultDto"
-            }
-          },
-          "tookMs": {
-            "type": "number",
-            "description": "How long the search took, in milliseconds.",
-            "example": 41
-          },
-          "cached": {
-            "type": "boolean",
-            "description": "Whether the query embedding came from cache rather than the provider.",
-            "example": false
-          }
-        },
-        "required": [
-          "results",
-          "tookMs",
-          "cached"
         ]
       },
       "AskRequestDto": {
@@ -1096,40 +965,6 @@
           "answer",
           "citations",
           "usage"
-        ]
-      },
-      "ChatRequestDto": {
-        "type": "object",
-        "properties": {
-          "question": {
-            "type": "string",
-            "description": "The question to answer.",
-            "example": "How do I authenticate?"
-          },
-          "conversationId": {
-            "type": "string",
-            "description": "Conversation to continue. Omit to start one.",
-            "format": "uuid"
-          },
-          "topK": {
-            "type": "number",
-            "description": "How many passages to retrieve. Defaults to `RETRIEVAL_TOP_K`.",
-            "minimum": 1,
-            "maximum": 20,
-            "example": 8
-          },
-          "documentIds": {
-            "description": "Restrict retrieval to these documents. Omit to search everything.",
-            "maxItems": 50,
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        },
-        "required": [
-          "question"
         ]
       },
       "ConversationSummaryDto": {
@@ -1259,6 +1094,233 @@
           "createdAt",
           "updatedAt",
           "messages"
+        ]
+      },
+      "SearchRequestDto": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "What to search for.",
+            "example": "how do I authenticate?"
+          },
+          "topK": {
+            "type": "number",
+            "description": "How many results to return. Defaults to `RETRIEVAL_TOP_K`.",
+            "minimum": 1,
+            "maximum": 50,
+            "example": 8
+          },
+          "documentIds": {
+            "description": "Restrict the search to these documents. Omit to search everything.",
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "query"
+        ]
+      },
+      "SearchResultDto": {
+        "type": "object",
+        "properties": {
+          "chunkId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentTitle": {
+            "type": "string",
+            "example": "lumen-api"
+          },
+          "content": {
+            "type": "string",
+            "description": "The passage itself."
+          },
+          "headingPath": {
+            "type": "string",
+            "nullable": true,
+            "description": "Where in the document this passage sits.",
+            "example": "Lumen API > Authentication"
+          },
+          "pageStart": {
+            "type": "number",
+            "nullable": true,
+            "example": 3
+          },
+          "pageEnd": {
+            "type": "number",
+            "nullable": true,
+            "example": 3
+          },
+          "score": {
+            "type": "number",
+            "description": "Fused relevance score. Comparable within one search only — it is a sum of\nreciprocal ranks, not a probability.",
+            "example": 0.0323
+          },
+          "vectorRank": {
+            "type": "number",
+            "nullable": true,
+            "description": "Rank in the vector search, or null if that search did not find it.",
+            "example": 1
+          },
+          "keywordRank": {
+            "type": "number",
+            "nullable": true,
+            "description": "Rank in the keyword search, or null if that search did not find it.",
+            "example": 3
+          }
+        },
+        "required": [
+          "chunkId",
+          "documentId",
+          "documentTitle",
+          "content",
+          "score"
+        ]
+      },
+      "SearchResponseDto": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchResultDto"
+            }
+          },
+          "tookMs": {
+            "type": "number",
+            "description": "How long the search took, in milliseconds.",
+            "example": 41
+          },
+          "cached": {
+            "type": "boolean",
+            "description": "Whether the query embedding came from cache rather than the provider.",
+            "example": false
+          }
+        },
+        "required": [
+          "results",
+          "tookMs",
+          "cached"
+        ]
+      },
+      "DocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "description": "Display name, the filename without its extension.",
+            "example": "billing-api"
+          },
+          "sourceFilename": {
+            "type": "string",
+            "description": "The name the file was uploaded under.",
+            "example": "billing-api.pdf"
+          },
+          "mimeType": {
+            "type": "string",
+            "example": "application/pdf"
+          },
+          "sizeBytes": {
+            "type": "number",
+            "example": 418233
+          },
+          "status": {
+            "type": "string",
+            "description": "Where the document is in the pipeline.",
+            "enum": [
+              "queued",
+              "parsing",
+              "chunking",
+              "embedding",
+              "ready",
+              "failed"
+            ],
+            "example": "ready"
+          },
+          "progress": {
+            "type": "number",
+            "description": "How far through ingestion, from 0 to 100.",
+            "example": 100
+          },
+          "language": {
+            "type": "string",
+            "nullable": true,
+            "description": "Detected language, which decides the text-search stemmer.",
+            "enum": [
+              "english",
+              "portuguese"
+            ]
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why ingestion failed, when it did.",
+            "example": null
+          },
+          "pageCount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Pages, for formats that have them.",
+            "example": 12
+          },
+          "chunkCount": {
+            "type": "number",
+            "description": "Retrievable passages stored for this document.",
+            "example": 48
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-10-30T22:14:03.118Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-10-30T22:14:09.441Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "sourceFilename",
+          "mimeType",
+          "sizeBytes",
+          "status",
+          "progress",
+          "chunkCount",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "DocumentPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentResponseDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Pass back as `cursor` to fetch the next page. Null when this is the last.",
+            "example": "2026-10-30T22:14:03.118Z"
+          }
+        },
+        "required": [
+          "items"
         ]
       }
     }
