@@ -1,5 +1,15 @@
-/** Text-search configurations the project supports. */
-export type SupportedLanguage = 'english' | 'portuguese';
+/**
+ * Text-search configurations the project supports.
+ *
+ * Exported as a value, not only a type, because retrieval has to enumerate
+ * them at query time: a `tsquery` built from a column cannot use the GIN
+ * index, so the keyword search expands into one index-scannable branch per
+ * configuration. Adding a language is then one edit here rather than two.
+ */
+export const SUPPORTED_LANGUAGES = ['english', 'portuguese'] as const;
+
+/** Text-search configuration of one chunk or document. */
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 /**
  * Words that are common in one language and rare in the other.
@@ -81,7 +91,7 @@ export function detectLanguage(text: string): SupportedLanguage {
   const counts: Record<SupportedLanguage, number> = { english: 0, portuguese: 0 };
 
   for (const word of sample) {
-    for (const language of ['english', 'portuguese'] as const) {
+    for (const language of SUPPORTED_LANGUAGES) {
       if (MARKERS[language].includes(word)) {
         counts[language] += 1;
       }
