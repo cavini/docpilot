@@ -11,7 +11,9 @@ describe('health against real infrastructure', () => {
   let pool: Pool;
 
   beforeAll(async () => {
-    moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    moduleRef = await Test.createTestingModule({
+      imports: [AppModule.forRoot({ runWorker: false })],
+    }).compile();
     await moduleRef.init();
 
     health = moduleRef.get(HealthService);

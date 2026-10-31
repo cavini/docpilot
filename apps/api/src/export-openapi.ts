@@ -31,7 +31,7 @@ const OUTPUT_PATH = resolve(process.cwd(), 'openapi.json');
 async function exportOpenApi(): Promise<void> {
   loadDotenv();
 
-  const app = await NestFactory.create(AppModule, { logger: false });
+  const app = await NestFactory.create(AppModule.forRoot({ runWorker: false }), { logger: false });
   await app.init();
 
   try {

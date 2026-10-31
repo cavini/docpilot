@@ -62,7 +62,9 @@ describe('ingestion progress over websockets (e2e)', () => {
   };
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule.forRoot({ runWorker: false })],
+    }).compile();
 
     app = moduleRef.createNestApplication();
     await app.init();

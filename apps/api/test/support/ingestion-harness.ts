@@ -27,13 +27,20 @@ export interface IngestionHarness {
 /**
  * Starts the application against the test containers.
  *
- * The processor is driven directly rather than through a running worker:
- * waiting on a background worker makes a test depend on timing, and a test
- * that sometimes passes is worse than one that does not exist. The processor
- * is the unit under test either way — the worker only decides *when* it runs.
+ * Built with `runWorker: false`, and the processor is driven directly rather
+ * than through a running worker: waiting on a background worker makes a test
+ * depend on timing, and a test that sometimes passes is worse than one that
+ * does not exist. The processor is the unit under test either way — the worker
+ * only decides *when* it runs.
+ *
+ * That this leaves the queue itself untested is covered by
+ * `test/integration/worker.spec.ts`, which is the one place a job travels
+ * through Redis to a consuming worker.
  */
 export async function createIngestionHarness(): Promise<IngestionHarness> {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+  const moduleRef = await Test.createTestingModule({
+    imports: [AppModule.forRoot({ runWorker: false })],
+  }).compile();
   const app = moduleRef.createNestApplication();
   await app.init();
 

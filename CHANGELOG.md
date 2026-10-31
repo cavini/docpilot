@@ -73,6 +73,14 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **The ingestion queue was never consumed, in any process.** `RUN_WORKER` was
+  declared inside `IngestionModule`, and Nest resolves a provider from the
+  module the consumer belongs to — so the processor always read that module's
+  hardcoded `false` and the value the entrypoint passed was ignored. Uploading
+  through the API left a document in `queued` for ever. Every test passed,
+  because every test called the processor directly. It is now supplied globally
+  by the entrypoint, with no default, so a misconfigured process fails at
+  startup instead of idling silently.
 - Keyword search had been a sequential scan since the heading-path fix:
   replacing the generated `tsv` column dropped the GIN index with it, and
   `drizzle-kit` could not see the cascade. Migration `0003` recreates it.
