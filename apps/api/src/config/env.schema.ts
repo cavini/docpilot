@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { VERSION } from '../version.js';
+
 import { EMBEDDING_DIMENSIONS } from '../db/schema/index.js';
 
 /** Parses the strings `true` and `false` that environment variables carry. */
@@ -107,7 +109,7 @@ export const envSchema = z
     DD_TRACE_ENABLED: booleanFromString(false),
     DD_SERVICE: z.string().default('docpilot-api'),
     DD_ENV: z.string().default('local'),
-    DD_VERSION: z.string().default('0.0.0'),
+    DD_VERSION: z.string().default(VERSION),
     DD_AGENT_HOST: z.string().default('localhost'),
   })
   .superRefine((env, ctx) => {
