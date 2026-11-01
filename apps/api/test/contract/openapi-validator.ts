@@ -12,6 +12,7 @@ interface OpenApiDocument {
 
 interface OpenApiOperation {
   responses?: Record<string, { content?: Record<string, { schema?: unknown }> }>;
+  requestBody?: { content?: Record<string, { schema?: { $ref?: string } }> };
 }
 
 /** The committed spec, which is the contract clients are generated from. */

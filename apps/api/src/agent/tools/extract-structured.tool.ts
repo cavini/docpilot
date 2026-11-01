@@ -1,3 +1,4 @@
+import { SCHEMA_NAMES, isSchemaName, schemaEntry, validateItems } from '@docpilot/shared';
 import { Output, generateText, tool } from 'ai';
 import { z } from 'zod';
 
@@ -5,7 +6,6 @@ import { type ChatModelFactory } from '../../chat/chat.tokens.js';
 import { type Env } from '../../config/env.schema.js';
 import { type UsageService } from '../../llm/index.js';
 import { type RetrievalService } from '../../retrieval/index.js';
-import { SCHEMA_NAMES, SCHEMA_REGISTRY, isSchemaName } from './schema-registry.js';
 import { type ToolFailure, fail, withTimeout } from './tool-result.js';
 
 /** How long extraction may take. */
@@ -27,61 +27,6 @@ export const extractStructuredInput = z.object({
     .optional()
     .describe("What to look for. Leave it out to use the schema's own default."),
 });
-
-/** What survived validation, and what did not. */
-export interface ValidatedItems {
-  items: unknown[];
-  dropped: number;
-}
-
-/**
- * Validates and deduplicates what the model produced.
- *
- * A second line of defence. The AI SDK already constrains the provider to the
- * schema and rejects a response that does not match — but providers differ in
- * how strictly they enforce one, and a provider that passes an almost-right
- * item through would otherwise send it to a caller who finds out later and
- * elsewhere.
- *
- * An item that fails is **dropped and counted** rather than failing the call:
- * one bad endpoint among ten good ones is still nine endpoints, and the count
- * tells the model something was lost.
- *
- * @param produced What the model returned.
- * @param entry The registry entry being extracted.
- * @returns The valid, deduplicated items and how many were dropped.
- */
-export function validateItems(
-  produced: unknown[],
-  entry: {
-    item: { safeParse: (value: unknown) => { success: boolean; data?: unknown } };
-    identity: (item: unknown) => string;
-  },
-): ValidatedItems {
-  const items: unknown[] = [];
-  const seen = new Set<string>();
-  let dropped = 0;
-
-  for (const candidate of produced) {
-    const parsed = entry.item.safeParse(candidate);
-
-    if (!parsed.success) {
-      dropped += 1;
-      continue;
-    }
-
-    const identity = entry.identity(parsed.data);
-
-    if (seen.has(identity)) {
-      continue;
-    }
-
-    seen.add(identity);
-    items.push(parsed.data);
-  }
-
-  return { items, dropped };
-}
 
 /** What the tool returns on success. */
 export interface ExtractStructuredOutput {
@@ -137,7 +82,7 @@ export function createExtractStructuredTool(
           );
         }
 
-        const entry = SCHEMA_REGISTRY[input.schema];
+        const entry = schemaEntry(input.schema);
 
         const { results } = await retrieval.search({
           query: input.query ?? entry.defaultQuery,

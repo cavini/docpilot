@@ -4,12 +4,7 @@ import { type ChatModelFactory } from '../../chat/chat.tokens.js';
 import { type Env } from '../../config/env.schema.js';
 import { type UsageService } from '../../llm/index.js';
 import { type RetrievalService, type ScoredChunk } from '../../retrieval/index.js';
-import {
-  createExtractStructuredTool,
-  extractStructuredInput,
-  validateItems,
-} from './extract-structured.tool.js';
-import { SCHEMA_REGISTRY } from './schema-registry.js';
+import { createExtractStructuredTool, extractStructuredInput } from './extract-structured.tool.js';
 import { isFailure } from './tool-result.js';
 
 const env = { MAX_OUTPUT_TOKENS: 1_024 } as Env;
@@ -169,43 +164,5 @@ describe('extract_structured', () => {
     await run(tool, { schema: 'api_endpoints' });
 
     expect(record).toHaveBeenCalledWith(expect.objectContaining({ operation: 'structured' }));
-  });
-});
-
-describe('validateItems', () => {
-  const entry = SCHEMA_REGISTRY.api_endpoints;
-
-  it('keeps items that validate', () => {
-    expect(validateItems([endpoint], entry)).toEqual({ items: [endpoint], dropped: 0 });
-  });
-
-  it('AC3: drops an item that does not, and counts it', () => {
-    // A second line of defence behind the SDK's own constraint: a provider
-    // that passes an almost-right item through would otherwise send it to a
-    // caller who finds out later and somewhere else.
-    //
-    // Dropped rather than failing the call: one bad endpoint among ten good
-    // ones is still nine endpoints, and the count says something was lost.
-    const bad = { method: 'TRACE', path: '/x', summary: 's', authenticated: false };
-
-    expect(validateItems([endpoint, bad], entry)).toEqual({ items: [endpoint], dropped: 1 });
-  });
-
-  it('deduplicates the same endpoint found in two passages', () => {
-    const result = validateItems([endpoint, { ...endpoint, summary: 'worded differently' }], entry);
-
-    expect(result.items).toHaveLength(1);
-    // A duplicate is not a drop: nothing was lost.
-    expect(result.dropped).toBe(0);
-  });
-
-  it('keeps the first wording of a duplicate, not the last', () => {
-    const result = validateItems([endpoint, { ...endpoint, summary: 'second' }], entry);
-
-    expect(result.items[0]).toEqual(endpoint);
-  });
-
-  it('returns nothing for nothing', () => {
-    expect(validateItems([], entry)).toEqual({ items: [], dropped: 0 });
   });
 });

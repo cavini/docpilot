@@ -9,6 +9,7 @@ export {
 } from './pricing.js';
 export {
   CANNED_MOCK_AGENT_SCRIPT,
+  cannedMockExtraction,
   CANNED_MOCK_ANSWER,
   createChatModel,
   createEmbeddingModel,

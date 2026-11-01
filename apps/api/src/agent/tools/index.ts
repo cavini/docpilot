@@ -5,18 +5,7 @@ export {
   createSummarizeDocumentTool,
   summarizeDocumentInput,
 } from './summarize-document.tool.js';
-export {
-  createExtractStructuredTool,
-  extractStructuredInput,
-  validateItems,
-} from './extract-structured.tool.js';
-export {
-  SCHEMA_NAMES,
-  SCHEMA_REGISTRY,
-  apiEndpointSchema,
-  isSchemaName,
-  type SchemaName,
-} from './schema-registry.js';
+export { createExtractStructuredTool, extractStructuredInput } from './extract-structured.tool.js';
 export {
   ToolTimeoutError,
   fail,
