@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { type ReactNode } from 'react';
 
+import { AccessGate } from '@/features/access/access-gate';
 import { routing } from '@/i18n/routing';
 import { StoreProvider } from '@/store/store-provider';
 
@@ -25,6 +26,10 @@ export async function generateMetadata(): Promise<Metadata> {
  *
  * Sets `lang` on `<html>` from the active locale, which assistive technology
  * uses to pick a voice and browsers use for hyphenation.
+ *
+ * The gate wraps everything rather than each page, so a route added later is
+ * behind it without anyone remembering - the same reason the server's guard
+ * is global.
  */
 export default async function LocaleLayout({ children }: { children: ReactNode }) {
   const locale = await getLocale();
@@ -33,7 +38,9 @@ export default async function LocaleLayout({ children }: { children: ReactNode }
     <html lang={locale}>
       <body className="min-h-screen antialiased">
         <NextIntlClientProvider>
-          <StoreProvider>{children}</StoreProvider>
+          <StoreProvider>
+            <AccessGate>{children}</AccessGate>
+          </StoreProvider>
         </NextIntlClientProvider>
       </body>
     </html>

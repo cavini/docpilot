@@ -8,6 +8,7 @@ import {
 } from 'ai';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { demoKeyHeaders } from '../access/demo-key';
 import { type Citation } from './citation.types';
 
 /** Base URL of the Nest API. */
@@ -170,6 +171,10 @@ export function useDocpilotChat(
             // stream, so switching between them is a path rather than a
             // second transport.
             api: `${API_URL}/${current}`,
+            // Read here rather than when the transport was built: the
+            // transport is memoised for the component's lifetime, and the
+            // key can arrive after it.
+            headers: demoKeyHeaders(),
             body: {
               question: resuming ? (asked ?? '') : question,
               ...(conversation === null ? {} : { conversationId: conversation }),

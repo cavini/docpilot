@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { type Socket, io } from 'socket.io-client';
 
+import { demoKeyHeaders } from '../access/demo-key';
 import { docpilotApi } from '../../store/api';
 import { useAppDispatch } from '../../store/hooks';
 import { type DocumentLanguage, type DocumentStatus, type DocumentSummary } from './document.types';
@@ -97,6 +98,10 @@ export function useIngestionProgress(documentIds: readonly string[]): void {
 
     const ids = key.split(',');
     const socket: Socket = io(`${API_URL}${NAMESPACE}`, {
+      // Socket.IO has no request headers on a websocket upgrade, so the key
+      // travels in the handshake payload, which is where the gateway reads
+      // it from.
+      auth: demoKeyHeaders(),
       transports: ['websocket'],
       // Reconnection is the default; naming it here because the resubscribe
       // below depends on it.

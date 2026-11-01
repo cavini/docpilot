@@ -2,6 +2,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 
+import { demoKeyHeaders } from '../access/demo-key';
 import {
   type ExtractionCitation,
   type ExtractionStatus,
@@ -80,7 +81,7 @@ export function useExtraction(): Extraction {
         try {
           const response = await fetch(`${API_URL}/extract/stream`, {
             method: 'POST',
-            headers: { 'content-type': 'application/json' },
+            headers: { 'content-type': 'application/json', ...demoKeyHeaders() },
             body: JSON.stringify({ schema, ...options }),
             signal: controller.signal,
           });
@@ -166,6 +167,7 @@ export function useExtraction(): Extraction {
  */
 export async function fetchSchemas(signal?: AbortSignal): Promise<SchemaSummary[]> {
   const response = await fetch(`${API_URL}/extract/schemas`, {
+    headers: demoKeyHeaders(),
     ...(signal === undefined ? {} : { signal }),
   });
 
