@@ -21,7 +21,7 @@ answer is in the documents at all. DocPilot's answers carry a citation for every
 claim, pointing at the exact passage it came from, so the answer can be verified
 in one click rather than taken on trust.
 
-## Features
+## What works today
 
 - **Answers with citations.** Every claim links to the chunk it came from:
   document, heading path, page number, snippet.
@@ -34,16 +34,26 @@ in one click rather than taken on trust.
 - **A tool-calling agent** with step limits and explicit approval before any
   side effect.
 - **Structured extraction** validated against Zod schemas, with a repair pass on
-  invalid output.
-- **An MCP server**, so Claude Desktop, Cursor or Claude Code can search the
-  knowledge base from the editor.
-- **REST and GraphQL**, sharing the same services and guardrails.
+  invalid output, filling a table as rows arrive.
 - **English and Brazilian Portuguese**, including language-aware text search.
-- **Evals** measuring retrieval and answer quality, not just whether the code
-  runs.
-- **Guardrails**: rate limits, input and output caps, prompt-injection
-  mitigations, and approval for side effects.
+- **Guardrails for a public demo**: a shared-key gate, per-client burst and
+  daily limits, a spend ceiling read from the usage ledger, and a corpus cap —
+  with the threat model and the known gaps written down in
+  [`docs/security-and-guardrails.md`](./docs/security-and-guardrails.md).
 - **Cost tracking.** Every model call records its tokens and cost.
+
+## Planned
+
+Built in milestone order; nothing below is implemented yet, and the
+documentation for each lands with the code rather than ahead of it.
+
+|                                                                                                           | Milestone |
+| --------------------------------------------------------------------------------------------------------- | --------- |
+| An **MCP server**, so Claude Desktop, Cursor or Claude Code can search the knowledge base from the editor | M6        |
+| **Evals** measuring retrieval and answer quality, not just whether the code runs                          | M7        |
+| **Observability**: traces for retrieval, model calls and ingestion                                        | M7        |
+| A **GraphQL** read API alongside REST, sharing the same services and guardrails                           | M8        |
+| An **Expo** client                                                                                        | M10       |
 
 ## Architecture
 
@@ -51,16 +61,16 @@ in one click rather than taken on trust.
 flowchart LR
     subgraph clients [Clients]
         web["Next.js web app"]
-        mobile["Expo app (optional)"]
-        editor["Claude Desktop / Cursor"]
+        mobile["Expo app (M10)"]
+        editor["Claude Desktop / Cursor (M6)"]
     end
 
     subgraph backend ["NestJS (apps/api)"]
-        http["HTTP: REST, chat stream,<br/>WebSockets, GraphQL"]
+        http["HTTP: REST, chat stream,<br/>WebSockets, GraphQL (M8)"]
         worker["Worker: BullMQ processors"]
     end
 
-    mcp["MCP server<br/>(Nest standalone app)"]
+    mcp["MCP server (M6)<br/>(Nest standalone app)"]
 
     subgraph data [Data]
         pg[("PostgreSQL + pgvector")]
@@ -79,7 +89,8 @@ flowchart LR
 ```
 
 Everything server-side is NestJS, including the worker and the MCP server, and
-the web app talks only to the API. The reasoning is in
+the web app talks only to the API. Boxes marked with a milestone are planned
+rather than built. The reasoning is in
 [ADR 0011](./docs/adr/0011-nestjs-only-backend.md).
 
 ## Tech stack

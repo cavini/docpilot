@@ -1,0 +1,50 @@
+name: Keep the demo warm
+
+# The API runs on a free tier that stops the instance after a quiet spell,
+# and the first request afterwards waits for a cold start. A recruiter who
+# clicks the link and waits a minute concludes the app is broken.
+#
+# This is a workaround for a platform behaving as designed, not a clever
+# trick, and it is written down as such: if the host ever objects, the honest
+# fix is to pay for an instance that does not sleep, or to stop hosting it.
+on:
+  schedule:
+    # Every ten minutes. The instance idles out at fifteen.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+# Never two at once, and a queued run is worthless by the time it starts.
+concurrency:
+  group: keep-warm
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping the liveness endpoint
+        env:
+          # Set once the API is deployed. Empty until then, which makes this
+          # a no-op rather than a failing job on every schedule.
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "API_URL is not set; nothing deployed yet. Skipping."
+            exit 0
+          fi
+
+          # Liveness only: it touches no database and no provider, so this
+          # costs nothing but the instance staying awake.
+          code=$(curl -fsS -o /dev/null -w '%{http_code}' --max-time 60 "$API_URL/health/live" || echo 000)
+          echo "GET $API_URL/health/live -> $code"
+
+          # A cold start can outlast the first request. One retry tells a real
+          # outage apart from an instance that was simply asleep.
+          if [ "$code" != "200" ]; then
+            sleep 20
+            code=$(curl -fsS -o /dev/null -w '%{http_code}' --max-time 60 "$API_URL/health/live" || echo 000)
+            echo "retry -> $code"
+          fi
+
+          [ "$code" = "200" ]
