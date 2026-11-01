@@ -3,6 +3,5 @@
   "buildCommand": "pnpm --filter @docpilot/shared build && pnpm --filter @docpilot/web build",
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": "nextjs",
-  "outputDirectory": "apps/web/.next",
   "github": { "silent": true }
 }
