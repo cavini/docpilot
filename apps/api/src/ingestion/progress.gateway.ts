@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
   ConnectedSocket,
@@ -12,6 +12,10 @@ import {
 import { PinoLogger } from 'nestjs-pino';
 import { type Server, type Socket } from 'socket.io';
 import { z } from 'zod';
+
+import { DEMO_KEY_HEADER, matchesDemoKey } from '../access/demo-key.js';
+import { type Env } from '../config/env.schema.js';
+import { ENV } from '../config/env.tokens.js';
 
 import {
   INGESTION_EVENTS,
@@ -68,11 +72,40 @@ export class IngestionProgressGateway implements OnGatewayConnection, OnGatewayD
   @WebSocketServer()
   private server?: Server;
 
-  constructor(private readonly logger: PinoLogger) {
+  constructor(
+    private readonly logger: PinoLogger,
+    @Inject(ENV) private readonly env: Env,
+  ) {
     this.logger.setContext(IngestionProgressGateway.name);
   }
 
+  /**
+   * Accepts a connection, or closes it when the demo key is missing or wrong.
+   *
+   * The global HTTP guard does not apply here: a websocket upgrade carries no
+   * request headers Nest can read as a route, so the key travels in the
+   * handshake payload and is checked once, at connect.
+   *
+   * Disconnected rather than refused with an error event: a client that is
+   * not allowed to watch progress has nothing to retry, and leaving the
+   * socket open to say so is a socket somebody can keep open.
+   *
+   * @param client The connecting socket.
+   */
   handleConnection(client: Socket): void {
+    if (this.env.DEMO_API_KEY !== '') {
+      const supplied = (client.handshake.auth as Record<string, unknown>)[DEMO_KEY_HEADER];
+
+      if (
+        !matchesDemoKey(typeof supplied === 'string' ? supplied : undefined, this.env.DEMO_API_KEY)
+      ) {
+        this.logger.debug({ socketId: client.id }, 'socket refused: no demo key');
+        client.disconnect(true);
+
+        return;
+      }
+    }
+
     this.logger.debug({ socketId: client.id }, 'client connected to ingestion progress');
   }
 

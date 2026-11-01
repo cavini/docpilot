@@ -1,11 +1,14 @@
 import { type INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { type AddressInfo } from 'node:net';
 import request from 'supertest';
+import { type Socket, io } from 'socket.io-client';
 
 import { AppModule } from '../../src/app.module.js';
 import { type Env } from '../../src/config/env.schema.js';
 import { ENV } from '../../src/config/env.tokens.js';
 import { loadEnv } from '../../src/config/load-env.js';
+import { INGESTION_NAMESPACE } from '../../src/ingestion/progress.gateway.js';
 import { httpServer } from '../support/http.js';
 
 const KEY = 'c2f1f0b1e0a94a1d8f3c7b6e5d4a3b2c';
@@ -119,6 +122,64 @@ describe('the demo gate (e2e)', () => {
           .expect(200);
 
         expect(body.budget).toMatchObject({ spent: false, resetsAt: null });
+      });
+    });
+
+    describe('the progress websocket', () => {
+      let url: string;
+      const opened: Socket[] = [];
+
+      /** Resolves on connect, or rejects when the server hangs up. */
+      const tryConnect = (auth: Record<string, string>): Promise<boolean> =>
+        new Promise<boolean>((resolve) => {
+          const socket = io(`${url}${INGESTION_NAMESPACE}`, {
+            transports: ['websocket'],
+            reconnection: false,
+            auth,
+          });
+
+          opened.push(socket);
+          socket.once('connect', () => {
+            // Connected, then dropped by the server, still counts as refused:
+            // the gateway disconnects rather than erroring, because a client
+            // that may not watch has nothing to retry.
+            socket.once('disconnect', () => {
+              resolve(false);
+            });
+            setTimeout(() => {
+              resolve(socket.connected);
+            }, 300);
+          });
+          socket.once('connect_error', () => {
+            resolve(false);
+          });
+        });
+
+      beforeAll(async () => {
+        await app.listen(0);
+        const address = app.getHttpServer().address() as AddressInfo;
+
+        url = `http://127.0.0.1:${String(address.port)}`;
+      });
+
+      afterAll(() => {
+        for (const socket of opened) {
+          socket.disconnect();
+        }
+      });
+
+      it('AC1: hangs up on a socket with no key', async () => {
+        // The HTTP guard does not reach here - a websocket upgrade carries no
+        // route for Nest to guard - so the gateway checks the handshake.
+        await expect(tryConnect({})).resolves.toBe(false);
+      });
+
+      it('AC1: hangs up on a socket with the wrong key', async () => {
+        await expect(tryConnect({ 'x-demo-key': 'nope' })).resolves.toBe(false);
+      });
+
+      it('accepts a socket carrying the right key', async () => {
+        await expect(tryConnect({ 'x-demo-key': KEY })).resolves.toBe(true);
       });
     });
   });
