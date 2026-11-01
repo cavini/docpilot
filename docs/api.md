@@ -8,8 +8,8 @@ rather than written by hand, and checked in CI against a fresh regeneration so
 it cannot drift. Run `pnpm dev` and open <http://localhost:3001/docs> for the
 browsable version.
 
-This page covers what is implemented. Endpoints arriving in later milestones
-(tools, GraphQL, structured extraction) are documented when they ship.
+This page covers what is implemented. Endpoints arriving in later milestones are
+documented when they ship.
 
 ## Conventions
 
@@ -582,6 +582,135 @@ with its evidence silently removed.
 
 **204**, and the turns go with it by foreign key. **404** if unknown.
 
+## Extraction
+
+Named schemas the server holds, filled from retrieved passages. The registry is
+in `packages/shared`, so the server validates and the web app lays out a table
+from one definition. → [`structured-output.md`](./structured-output.md).
+
+### `GET /extract/schemas`
+
+What the server knows, so a client can offer the choice without hard-coding it.
+
+```bash
+curl localhost:3001/extract/schemas
+```
+
+```json
+{
+  "schemas": [
+    {
+      "name": "api_endpoints",
+      "title": "API endpoints",
+      "description": "Every HTTP endpoint the documents describe, with its method, path, a one-line summary, and whether it needs authentication.",
+      "fields": [
+        {
+          "name": "method",
+          "kind": "enum",
+          "label": "Method",
+          "options": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+        },
+        { "name": "path", "kind": "string", "label": "Path" },
+        { "name": "summary", "kind": "text", "label": "Summary" },
+        { "name": "authenticated", "kind": "boolean", "label": "Auth" }
+      ]
+    }
+  ]
+}
+```
+
+`fields` is what a table renders. It comes from the schema rather than from the
+client, so adding a schema needs no front-end release. `kind` is a small closed
+set — `string`, `text`, `enum`, `boolean`, `number` — describing how wide a
+column should be and whether to align it, not what the validator checks.
+
+### `POST /extract`
+
+```bash
+curl -X POST localhost:3001/extract \
+  -H 'content-type: application/json' \
+  -d '{"schema": "api_endpoints", "query": "authentication"}'
+```
+
+| Field        | Required | Means                                            |
+| ------------ | -------- | ------------------------------------------------ |
+| `schema`     | yes      | A name from `GET /extract/schemas`               |
+| `documentId` | no       | Read only this document                          |
+| `query`      | no       | Retrieve with this instead of the schema default |
+
+```json
+{
+  "schema": "api_endpoints",
+  "items": [
+    {
+      "method": "POST",
+      "path": "/auth/token",
+      "summary": "Exchange a client id and secret for a token.",
+      "authenticated": false
+    }
+  ],
+  "citations": [
+    {
+      "n": 1,
+      "chunkId": "…",
+      "documentId": "…",
+      "documentTitle": "lumen-api",
+      "headingPath": "Authentication"
+    }
+  ],
+  "dropped": 0,
+  "repaired": false,
+  "usage": { "inputTokens": 1842, "outputTokens": 96, "costUsd": 0.000321 }
+}
+```
+
+`dropped` counts items the model produced that failed validation. `repaired`
+says whether the first attempt failed and had to be sent back with the error. A
+caller watching either climb is watching a schema that needs rewording.
+
+**400** names the schemas that exist when the one asked for is not among them,
+and is also what a second validation failure returns — twice is enough, and a
+third attempt is the same prompt again with the caller still waiting.
+
+An extraction is only as complete as the retrieval that fed it: twelve passages
+of a larger corpus will miss things. That is why the citations come back.
+
+### `POST /extract/stream`
+
+The same request, answered as server-sent events, one per **completed** item.
+
+```bash
+curl -N -X POST localhost:3001/extract/stream \
+  -H 'content-type: application/json' \
+  -d '{"schema": "api_endpoints"}'
+```
+
+```
+data: {"type":"schema","schema":"api_endpoints","citations":[…]}
+
+data: {"type":"item","item":{"method":"POST","path":"/auth/token",…}}
+
+data: {"type":"done","dropped":0}
+
+data: [DONE]
+```
+
+| Event    | Carries                                     |
+| -------- | ------------------------------------------- |
+| `schema` | The schema name and the passages being read |
+| `item`   | One item, complete and validated            |
+| `done`   | How many items were dropped                 |
+| `error`  | The stream ended early; what arrived stands |
+
+A partially-arrived item is never emitted — half a row is indistinguishable from
+a row with missing data. There is no repair on this path: a repair means
+discarding what was already sent, and a table that empties itself and refills is
+worse than one that says it ended early.
+
+A hand-rolled event shape rather than the AI SDK's UI message stream: this is
+not a chat, and a client reading a list of rows should not have to understand a
+protocol built for conversation.
+
 ## WebSocket events
 
 Socket.IO on namespace `/ingestion`. A client joins one room per document, so an
@@ -628,8 +757,7 @@ ceiling is `MAX_UPLOAD_MB`.
 
 ## Not yet implemented
 
-| Endpoint           | Milestone | What it adds               |
-| ------------------ | --------- | -------------------------- |
-| `POST /graphql`    | M5        | Behind `FF_GRAPHQL`        |
-| `POST /extract`    | M5        | The schema registry direct |
-| Evaluation harness | M7        | Measuring any of this      |
+| Endpoint           | Milestone | What it adds                   |
+| ------------------ | --------- | ------------------------------ |
+| Evaluation harness | M7        | Measuring any of this          |
+| `POST /graphql`    | M8        | A read API behind `FF_GRAPHQL` |

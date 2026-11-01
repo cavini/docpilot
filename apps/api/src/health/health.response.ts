@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+import { VERSION } from '../version.js';
+
 /** Health of one dependency. */
 export class DependencyHealthResponse {
   /** Whether the dependency answered. */
@@ -41,7 +43,7 @@ export class HealthResponseDto {
   status: 'ok' | 'degraded' | 'down';
 
   /** Application version. */
-  @ApiProperty({ example: '0.1.0' })
+  @ApiProperty({ example: VERSION })
   version: string;
 
   /** Seconds since the process started. */

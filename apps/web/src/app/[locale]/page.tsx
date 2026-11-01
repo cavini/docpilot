@@ -4,6 +4,7 @@ import { LocaleSwitcher } from '@/components/locale-switcher';
 import { SystemStatus } from '@/components/system-status';
 import { ChatView } from '@/features/chat/chat-view';
 import { DocumentLibrary } from '@/features/documents/document-library';
+import { ExtractionView } from '@/features/extraction/extraction-view';
 
 /**
  * The product: a corpus, and a conversation about it.
@@ -28,6 +29,8 @@ export default function HomePage() {
       <ChatView />
 
       <DocumentLibrary />
+
+      <ExtractionView />
 
       <section aria-labelledby="status-heading" className="flex flex-col gap-3">
         <h2

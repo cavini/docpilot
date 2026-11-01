@@ -118,5 +118,38 @@
       "labels": "Labels",
       "unreadable": "The assistant proposed something that is not a ticket. Decline it."
     }
+  },
+  "extraction": {
+    "heading": "Extract",
+    "intro": "Pull structured data out of the documents, using a shape this server knows.",
+    "schemaLabel": "Shape",
+    "run": "Extract",
+    "stop": "Stop",
+    "download": "Download JSON",
+    "waiting": "Extracting…",
+    "dropped": "{count, plural, one {# item dropped} other {# items dropped}}",
+    "schemasUnavailable": "The list of shapes could not be loaded.",
+    "readFrom": "{count, plural, one {Read from # passage} other {Read from # passages}} in {documents}.",
+    "tableCaption": "{count, plural, one {# extracted item} other {# extracted items}}",
+    "empty": {
+      "title": "Nothing extracted yet",
+      "description": "Choose a shape and press Extract. Rows appear as they are found."
+    },
+    "schema": {
+      "api_endpoints": "API endpoints",
+      "document_outline": "Document outline",
+      "faq_pairs": "Questions and answers"
+    },
+    "field": {
+      "method": "Method",
+      "path": "Path",
+      "summary": "Summary",
+      "authenticated": "Auth",
+      "level": "Level",
+      "heading": "Heading",
+      "gist": "Covers",
+      "question": "Question",
+      "answer": "Answer"
+    }
   }
 }
