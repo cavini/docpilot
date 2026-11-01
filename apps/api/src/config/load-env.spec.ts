@@ -158,4 +158,40 @@ describe('loadEnv', () => {
       ).not.toThrow();
     });
   });
+
+  describe('the demo key', () => {
+    it('accepts an empty one, which leaves the API open locally', () => {
+      expect(() => loadEnv({ ...minimalEnv, DEMO_API_KEY: '' })).not.toThrow();
+    });
+
+    it('refuses one short enough to guess', () => {
+      // Worse than none: it reads as protection while being guessable, and
+      // the failed-attempt limiter only slows a search down.
+      expect(() => loadEnv({ ...minimalEnv, DEMO_API_KEY: 'docpilot2026' })).toThrow(
+        /at least 24 characters/,
+      );
+    });
+
+    it('says how to generate a good one rather than just refusing', () => {
+      expect(() => loadEnv({ ...minimalEnv, DEMO_API_KEY: 'short' })).toThrow(/openssl rand -hex/);
+    });
+
+    it('accepts one worth having', () => {
+      expect(() =>
+        loadEnv({ ...minimalEnv, DEMO_API_KEY: 'f3a9c0e1b2d4e5f8a901c2d3e4f5a6b7c8d9e0f1' }),
+      ).not.toThrow();
+    });
+
+    it('AC7: never puts the key in the error when it refuses one', () => {
+      let message = '';
+
+      try {
+        loadEnv({ ...minimalEnv, DEMO_API_KEY: 'leak-me-please' });
+      } catch (caught) {
+        message = (caught as Error).message;
+      }
+
+      expect(message).not.toContain('leak-me-please');
+    });
+  });
 });

@@ -139,8 +139,14 @@ describe('request limits (e2e)', () => {
       // Asserted on the counter rather than on a later request's status: the
       // tracker is the client address, and every test in this file shares
       // one, so a status check here would be reading someone else's count.
+      //
+      // The statuses themselves are 401 and then 429 once the guard's own
+      // failed-key budget runs out. Either way none of them is counted
+      // against the request limiter, which is what this is about.
       for (let attempt = 0; attempt < RATE_LIMITS.answers.limit + 5; attempt += 1) {
-        await request(httpServer(guarded)).post('/ask').send({ question: 'x' }).expect(401);
+        const response = await request(httpServer(guarded)).post('/ask').send({ question: 'x' });
+
+        expect([401, 429]).toContain(response.status);
       }
 
       expect(await throttlerKeys()).toHaveLength(0);

@@ -2,13 +2,16 @@ import { type INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { type AddressInfo } from 'node:net';
 import request from 'supertest';
+import { type Redis } from 'ioredis';
 import { type Socket, io } from 'socket.io-client';
 
 import { AppModule } from '../../src/app.module.js';
 import { type Env } from '../../src/config/env.schema.js';
 import { ENV } from '../../src/config/env.tokens.js';
 import { loadEnv } from '../../src/config/load-env.js';
+import { MAX_AUTH_FAILURES } from '../../src/access/auth-failures.js';
 import { INGESTION_NAMESPACE } from '../../src/ingestion/progress.gateway.js';
+import { REDIS } from '../../src/redis/redis.tokens.js';
 import { httpServer } from '../support/http.js';
 
 const KEY = 'c2f1f0b1e0a94a1d8f3c7b6e5d4a3b2c';
@@ -36,6 +39,17 @@ describe('the demo gate (e2e)', () => {
     beforeAll(async () => {
       app = await appWithKey(KEY);
     }, 60_000);
+
+    beforeEach(async () => {
+      // Wrong keys are counted now, and every test here shares one client
+      // address and one Redis. Without this, whichever test ran eleventh
+      // would be refused for the rate rather than for the key.
+      const redis = app.get<Redis>(REDIS);
+
+      for (const key of await redis.keys('docpilot:auth-failures:*')) {
+        await redis.del(key);
+      }
+    });
 
     afterAll(async () => {
       await app.close();
@@ -181,6 +195,59 @@ describe('the demo gate (e2e)', () => {
       it('accepts a socket carrying the right key', async () => {
         await expect(tryConnect({ 'x-demo-key': KEY })).resolves.toBe(true);
       });
+    });
+
+    describe('guessing at the key', () => {
+      it('AC8: stops a client that keeps trying wrong keys', async () => {
+        const server = httpServer(app);
+        let blocked: request.Response | undefined;
+
+        for (let attempt = 0; attempt < MAX_AUTH_FAILURES + 5; attempt += 1) {
+          const response = await request(server)
+            .get('/documents')
+            .set('x-demo-key', `guess-${String(attempt)}`);
+
+          if (response.status === 429) {
+            blocked = response;
+            break;
+          }
+        }
+
+        expect(blocked).toBeDefined();
+        expect(blocked?.body).toMatchObject({ error: { code: 'too_many_requests' } });
+        expect(Number(blocked?.headers['retry-after'])).toBeGreaterThan(0);
+      }, 60_000);
+
+      it('AC8: a burst sent all at once is counted, not raced past', async () => {
+        // The thing a curl script does that a browser does not: fire them
+        // together. The count is incremented in Redis, which serialises it,
+        // so concurrency buys nothing.
+        const server = httpServer(app);
+        const burst = Array.from({ length: MAX_AUTH_FAILURES + 20 }, (_, attempt) =>
+          request(server)
+            .get('/documents')
+            .set('x-demo-key', `burst-${String(attempt)}`),
+        );
+
+        const statuses = (await Promise.all(burst)).map((response) => response.status);
+
+        expect(statuses.filter((status) => status === 401).length).toBeLessThanOrEqual(
+          MAX_AUTH_FAILURES,
+        );
+        expect(statuses).toContain(429);
+      }, 60_000);
+
+      it('lets the right key through even after somebody guessed badly', async () => {
+        const server = httpServer(app);
+
+        for (let attempt = 0; attempt <= MAX_AUTH_FAILURES; attempt += 1) {
+          await request(server).get('/documents').set('x-demo-key', 'wrong');
+        }
+
+        // The counter exists to bound guessing, not to lock out the person
+        // who actually has the key.
+        await request(server).get('/documents').set('x-demo-key', KEY).expect(200);
+      }, 60_000);
     });
   });
 
