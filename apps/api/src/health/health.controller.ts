@@ -8,10 +8,19 @@ import {
 } from '@nestjs/swagger';
 import { type Response } from 'express';
 
+import { Public } from '../access/public.decorator.js';
 import { HealthResponseDto } from './health.response.js';
 import { HealthService } from './health.service.js';
 
-/** Liveness and readiness for the API and its dependencies. */
+/**
+ * Liveness and readiness for the API and its dependencies.
+ *
+ * Reachable without the demo key: the hosting platform's probe has none, and
+ * a demo that reports itself unhealthy is a demo that gets restarted in a
+ * loop. Nothing here is worth protecting - it reports whether four systems
+ * answered, not what is in them.
+ */
+@Public()
 @ApiTags('health')
 @Controller('health')
 export class HealthController {

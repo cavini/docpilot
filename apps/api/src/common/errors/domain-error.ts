@@ -68,6 +68,18 @@ export class ConflictError extends DomainError {
 }
 
 /**
+ * The caller did not present the demo key.
+ *
+ * Carries no detail about what was supplied - not its value, not its length,
+ * not whether it was close. A message that says "wrong key" and one that says
+ * "key too short" are different amounts of help to someone guessing.
+ */
+export class UnauthorizedError extends DomainError {
+  override readonly code = 'unauthorized';
+  override readonly httpStatus = 401;
+}
+
+/**
  * The corpus already holds as many documents as it is allowed to.
  *
  * 409 rather than 413: the request is not too large, it conflicts with the

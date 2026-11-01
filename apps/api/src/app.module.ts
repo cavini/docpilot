@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { type DynamicModule, Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
+import { AccessModule } from './access/access.module.js';
 import { AgentModule } from './agent/agent.module.js';
 import { BudgetModule } from './budget/budget.module.js';
 import { ChatModule } from './chat/chat.module.js';
@@ -47,6 +48,9 @@ import { StorageModule } from './storage/storage.module.js';
     // After DbModule, because the ceiling is read from the usage ledger.
     BudgetModule,
     StorageModule,
+    // Before every feature module, so the global guard it registers is in
+    // place for all of them.
+    AccessModule,
     FeatureFlagsModule,
     HealthModule,
     LlmModule,
