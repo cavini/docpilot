@@ -142,6 +142,26 @@ export const envSchema = z
      */
     DAILY_BUDGET_USD: z.coerce.number().nonnegative().default(0),
 
+    /**
+     * Whether per-client request limits are enforced.
+     *
+     * On by default, because the deployment that needs them is the one where
+     * somebody forgot to think about them. Turned off for the test suite,
+     * which would otherwise trip a limit on whichever spec ran last.
+     */
+    RATE_LIMIT_ENABLED: booleanFromString(true),
+
+    /**
+     * Whether a proxy sits in front and sets `X-Forwarded-For`.
+     *
+     * Off by default. With it off, Express reports the socket address, which
+     * is always true; with it on, Express believes a header. That header is a
+     * client-supplied string unless a proxy you control overwrites it, so
+     * turning this on without one makes every per-client limit free to
+     * bypass.
+     */
+    TRUST_PROXY: booleanFromString(false),
+
     // Tracing. Off unless an agent is actually available.
     DD_TRACE_ENABLED: booleanFromString(false),
     DD_SERVICE: z.string().default('docpilot-api'),

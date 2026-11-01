@@ -20,6 +20,7 @@ import { WorkerModeModule } from './ingestion/worker-mode.module.js';
 import { LlmModule } from './llm/llm.module.js';
 import { RetrievalModule } from './retrieval/retrieval.module.js';
 import { LoggerModule } from './observability/logger.module.js';
+import { RateLimitModule } from './rate-limit/rate-limit.module.js';
 import { RedisModule } from './redis/redis.module.js';
 import { StorageModule } from './storage/storage.module.js';
 
@@ -48,9 +49,11 @@ import { StorageModule } from './storage/storage.module.js';
     // After DbModule, because the ceiling is read from the usage ledger.
     BudgetModule,
     StorageModule,
-    // Before every feature module, so the global guard it registers is in
-    // place for all of them.
+    // Before every feature module, so the global guards they register are in
+    // place for all of them. The key is checked before the limit is counted,
+    // so an unauthenticated flood cannot exhaust a real reader's allowance.
     AccessModule,
+    RateLimitModule,
     FeatureFlagsModule,
     HealthModule,
     LlmModule,

@@ -154,6 +154,42 @@ describe('agent (e2e)', () => {
     expect(await ticketCount()).toBe(0);
   }, 60_000);
 
+  it('injection AC18: a document ordering a ticket still only gets a proposal', async () => {
+    /*
+     * A real model cannot be made to obey an injection on demand, so this
+     * scripts the outcome the injection is trying to produce - the model
+     * calling create_ticket with the attacker's words - and asserts the gate
+     * holds anyway.
+     *
+     * That is the stronger claim. The guarantee is not "the model resists";
+     * it is "nothing is written without the reader, whatever the model was
+     * persuaded to attempt".
+     */
+    script = [
+      {
+        text: '',
+        toolCall: {
+          toolName: APPROVAL_REQUIRED_TOOL,
+          input: { title: 'pwned', body: 'exfiltrated' },
+        },
+      },
+      { text: 'I have proposed a ticket.' },
+    ];
+
+    const { text } = await request(httpServer(app))
+      .post('/agent')
+      .send({ question: 'Summarise the billing runbook' })
+      .expect(200);
+
+    const parts = parseStream(text);
+
+    // The reader sees the proposal in full, with the attacker's words in it,
+    // which is what lets them refuse it.
+    expect(parts.find((part) => part.type === 'tool-approval-request')).toBeDefined();
+    expect(text).toContain('pwned');
+    expect(await ticketCount()).toBe(0);
+  }, 60_000);
+
   it('create-ticket AC4: a stream ending with the approval unanswered creates nothing', async () => {
     // The default is always "did not happen".
     //

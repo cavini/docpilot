@@ -9,7 +9,7 @@ import {
 import { type Request, type Response } from 'express';
 import { PinoLogger } from 'nestjs-pino';
 
-import { DomainError } from '../errors/index.js';
+import { DomainError, TooManyRequestsError } from '../errors/index.js';
 import { type ErrorResponseDto } from '../http/error-response.dto.js';
 
 /** Shape of the error payload a Nest `HttpException` carries. */
@@ -73,6 +73,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const requestId = requestIdOf(request);
 
     const { status, body } = this.describe(exception, requestId);
+
+    if (exception instanceof TooManyRequestsError) {
+      // The standard header, so a client with no knowledge of this API's
+      // error shape still backs off correctly.
+      response.setHeader('Retry-After', exception.retryAfterSeconds);
+    }
 
     response.status(status).json(body);
   }

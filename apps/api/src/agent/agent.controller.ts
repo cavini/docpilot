@@ -6,9 +6,11 @@ import { type Request, type Response } from 'express';
 import { ChatRequestDto } from '../chat/chat.dto.js';
 import { ApiErrors } from '../common/http/api-errors.decorator.js';
 import { AgentService } from './agent.service.js';
+import { AnswerRateLimit } from '../rate-limit/index.js';
 
 /** Answers that may involve calling tools. */
 @ApiTags('agent')
+@AnswerRateLimit()
 @Controller('agent')
 export class AgentController {
   constructor(private readonly agent: AgentService) {}

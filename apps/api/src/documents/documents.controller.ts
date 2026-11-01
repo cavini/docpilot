@@ -31,6 +31,7 @@ import { toDocumentResponse } from './document.mapper.js';
 import { DocumentsService } from './documents.service.js';
 import { DocumentPageDto, DocumentResponseDto } from './documents.response.js';
 import { type UploadedFile as UploadedFileShape } from './upload-validation.js';
+import { UploadRateLimit } from '../rate-limit/index.js';
 
 /** Uploading documents and following their ingestion. */
 @ApiTags('documents')
@@ -46,6 +47,8 @@ export class DocumentsController {
    * idempotent: a client can retry a failed request, or a user can drag the
    * same file in twice, and simply use the document that comes back.
    */
+  // Embeddings, storage and the CPU to parse a document.
+  @UploadRateLimit()
   @Post()
   @ApiOperation({ summary: 'Upload a PDF, Markdown or plain text document' })
   @ApiConsumes('multipart/form-data')
@@ -119,6 +122,8 @@ export class DocumentsController {
    * Only a failed document can be retried; retrying one that is queued or
    * already ready would duplicate work or discard a good result.
    */
+  // A retry re-embeds, so it costs what an upload costs.
+  @UploadRateLimit()
   @Post(':id/retry')
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: 'Reprocess a document that failed' })

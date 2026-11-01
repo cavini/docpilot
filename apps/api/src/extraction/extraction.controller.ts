@@ -6,6 +6,7 @@ import { type Request, type Response } from 'express';
 import { ApiErrors } from '../common/http/api-errors.decorator.js';
 import { ExtractRequestDto, ExtractionResponseDto, SchemaListDto } from './extraction.dto.js';
 import { ExtractionService } from './extraction.service.js';
+import { AnswerRateLimit } from '../rate-limit/index.js';
 
 /** Extracting structured data from the corpus. */
 @ApiTags('extraction')
@@ -44,6 +45,7 @@ export class ExtractionController {
   }
 
   /** Extracts the named schema from the corpus. */
+  @AnswerRateLimit()
   @Post()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Extract structured data using a named schema' })
@@ -75,6 +77,7 @@ export class ExtractionController {
    * real status codes. Once it is open the status is already 200, so a
    * failure can only be an `error` event inside it.
    */
+  @AnswerRateLimit()
   @Post('stream')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Extract structured data, one item at a time' })

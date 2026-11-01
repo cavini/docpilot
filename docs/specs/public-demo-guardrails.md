@@ -1,6 +1,6 @@
 # Spec: Guarding a public demo
 
-Status: accepted Milestone: M5.5 (M7's guardrails, brought forward)
+Status: implemented Milestone: M5.5 (M7's guardrails, brought forward)
 
 ## Problem and goal
 
@@ -66,8 +66,13 @@ the interface needs to render honestly: whether the budget is spent.
 
 ### The spend cap
 
-`DAILY_BUDGET_USD` is a ceiling on `sum(costUsd)` over the last 24 hours, read
-from `llm_usage`. Checked **before** a call, not after — after is a bill.
+`DAILY_BUDGET_USD` is a ceiling on `sum(costUsd)` since midnight UTC, read from
+`llm_usage`. Checked **before** a call, not after — after is a bill.
+
+A calendar day rather than a rolling twenty-four hours, so there is an answer to
+"when does it reset" that can be put in front of a reader. A rolling window is
+fairer and resets continuously, which is not a sentence anyone wants to read on
+a demo page.
 
 At or above the ceiling the behaviour differs by what the call would leave
 behind:
@@ -201,7 +206,7 @@ finishes rather than being cut off.
 **AC15.** Given the corpus already holds `MAX_DOCUMENTS`, when another is
 uploaded, then it is refused and the message says why.
 
-**AC16.** Given a question longer than `MAX_QUESTION_CHARS`, when it is sent,
+**AC16.** Given a question longer than `MAX_QUESTION_LENGTH`, when it is sent,
 then it is refused **before** any model call.
 
 **AC17.** Given a document containing an instruction aimed at the model, when it
@@ -266,3 +271,9 @@ test asserts that `fetch` was **never called**.
 What `DAILY_BUDGET_USD` should actually be. At roughly $0.007 a question, fifty
 cents a day is about seventy questions — generous for a portfolio demo and a
 tenth of the balance if every day were maxed out. Starting there.
+
+Whether the text a document expands into needs its own ceiling. `MAX_UPLOAD_MB`
+bounds the bytes that arrive, not what they become, so a small dense PDF can
+produce a lot of chunks. The spend ceiling catches the cost of that; nothing
+catches the memory. Unaddressed because I have not seen it happen, and it is
+written down in `security-and-guardrails.md` rather than left implicit.

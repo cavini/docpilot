@@ -6,9 +6,11 @@ import { type Request, type Response } from 'express';
 import { ApiErrors } from '../common/http/api-errors.decorator.js';
 import { ChatRequestDto } from './chat.dto.js';
 import { ChatService } from './chat.service.js';
+import { AnswerRateLimit } from '../rate-limit/index.js';
 
 /** Streamed, conversational answers. */
 @ApiTags('chat')
+@AnswerRateLimit()
 @Controller('chat')
 export class ChatController {
   constructor(private readonly chat: ChatService) {}

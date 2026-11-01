@@ -7,6 +7,31 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — guarding a public demo
+
+M7's guardrails, brought forward because the deploy is imminent and a guardrail
+added after the first abuse is a guardrail added too late.
+
+- A **daily spend ceiling** (`DAILY_BUDGET_USD`) read from the usage ledger,
+  which already records what every call cost. Past it, answering falls back to
+  the mock and says so; ingestion is refused, because a document embedded by the
+  mock would sit in the corpus returning confident nonsense for every future
+  search. A ledger that cannot be read counts as exhausted.
+- A **shared demo key** (`DEMO_API_KEY`), compared in constant time on digests,
+  required by a global opt-out guard on every route but health — and on the
+  progress websocket, which no HTTP guard reaches. The browser asks for it
+  before making any request at all.
+- **Per-client request limits** counted in Redis, in three tiers by what a
+  request costs, with `Retry-After` and the project's usual error shape.
+- **Resource caps**: `MAX_DOCUMENTS` alongside the existing `MAX_UPLOAD_MB`.
+- A **line at boot** naming every guard, phrased so the dangerous states are the
+  loud ones.
+- Proof of what an uploaded document cannot do: a PDF carrying JavaScript three
+  ways does not execute it, a renamed binary never reaches the PDF engine, a
+  file is stored under its id and never its name, and markup from a document
+  never becomes an element in a browser.
+- `docs/security-and-guardrails.md`, including the gaps.
+
 ## [0.2.0] - 2026-11-01
 
 ### Added in M5
