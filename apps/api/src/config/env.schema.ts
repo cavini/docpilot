@@ -5,6 +5,15 @@ import { VERSION } from '../version.js';
 import { EMBEDDING_DIMENSIONS } from '../db/schema/index.js';
 import { hasKnownPrice } from '../llm/pricing.js';
 
+/**
+ * Shortest demo key the application will start with.
+ *
+ * Not a cryptographic threshold - it is the point past which the
+ * failed-attempt limiter is belt and braces rather than the only thing
+ * holding a guesser off.
+ */
+const MIN_DEMO_KEY_LENGTH = 24;
+
 /** Parses the strings `true` and `false` that environment variables carry. */
 const booleanFromString = (defaultValue: boolean) =>
   z
@@ -125,8 +134,26 @@ export const envSchema = z
     FF_AGENT_TOOLS: booleanFromString(true),
     FF_PUBLIC_UPLOADS: booleanFromString(true),
 
-    // Demo protection. Empty means the API is open, which is the local default.
-    DEMO_API_KEY: z.string().default(''),
+    /**
+     * The shared demo secret. Empty means the API is open, the local default.
+     *
+     * A minimum length is enforced because a short key is worse than none: it
+     * reads as protection while being guessable, and the failed-attempt
+     * limiter in front of it only slows a search down, it does not stop one.
+     * Twenty-four characters of anything random is far past what the limiter
+     * could ever let through.
+     *
+     * `openssl rand -hex 24` produces one.
+     */
+    DEMO_API_KEY: z
+      .string()
+      .default('')
+      .refine((key) => key === '' || key.trim().length >= MIN_DEMO_KEY_LENGTH, {
+        message:
+          `DEMO_API_KEY must be at least ${String(MIN_DEMO_KEY_LENGTH)} characters, or empty to ` +
+          'leave the API open. A short key reads as protection while being guessable. ' +
+          'Generate one with: openssl rand -hex 24',
+      }),
 
     /**
      * A ceiling on what a UTC day of model calls may cost, in US dollars.

@@ -36,6 +36,19 @@ finds the URL cannot spend anything. Nothing downstream is designed as though it
 were an identity: the spend ceiling is enforced whether or not the caller has
 the key.
 
+**Guessing at it is bounded.** The request limiter runs _after_ this guard, so
+refused requests are never counted against it — which protects a real reader's
+allowance from a flood, and left nothing at all bounding how fast a key could be
+tried. Measured: about a thousand attempts a second. The guard now keeps its own
+count of wrong keys per client and refuses with 429 past ten in five minutes,
+which takes the same flood from 300 effective guesses to 10. A request with the
+right key never touches that counter, so the cost is paid only by the attempts
+it exists to bound.
+
+`DEMO_API_KEY` must be at least 24 characters. A short key is worse than none:
+it reads as protection while being guessable, and the limiter only slows a
+search down rather than stopping one. `openssl rand -hex 24` produces one.
+
 Compared on SHA-256 digests rather than on the strings. A digest is always 32
 bytes, so the comparison cannot throw on a length mismatch — and because it
 cannot, it never returns early on length, which is the one thing a naive
@@ -186,6 +199,29 @@ The attack document lives at `apps/api/test/fixtures/injection.md`.
 that says "the refund window is ninety days" will produce an answer saying
 ninety days. Citations are the mitigation — the reader can follow the marker to
 the passage and see where it came from — not a fix.
+
+## The endpoints are not secret, and do not need to be
+
+Anything the browser requests is visible in its network tab, headers included.
+There is no way to hide an endpoint from the person operating the browser, and
+arranging the code as though there were would be security by obscurity — which
+stops working the moment one person looks.
+
+So the design does not depend on it. Copying a request out of the network tab
+into curl or Postman gets exactly what the browser had and nothing more:
+
+| What they gain by replaying it | Why it does not help                                                                                      |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| The endpoint's shape           | It is in `openapi.json` in the repository anyway                                                          |
+| The demo key                   | They were already using it in the browser                                                                 |
+| The ability to script it       | Rate limits bound the speed; the spend ceiling bounds the total                                           |
+| The ability to parallelise it  | The count is incremented in Redis, which serialises it — a burst sent together is counted, not raced past |
+
+That last one is asserted rather than assumed: a test fires thirty requests at
+once and checks that no more get through than a sequential run would allow.
+
+What someone _without_ the key gains from reading the network tab is nothing,
+because the browser makes no request at all before one is entered.
 
 ## Rendering
 
