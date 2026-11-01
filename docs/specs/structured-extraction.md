@@ -1,6 +1,6 @@
 # Spec: Structured extraction
 
-Status: accepted Milestone: M5
+Status: implemented Milestone: M5
 
 ## Problem and goal
 
@@ -61,8 +61,13 @@ What the server knows, so a client can offer the choice without hard-coding it.
       "title": "API endpoints",
       "description": "Every HTTP endpoint the documents describe…",
       "fields": [
-        { "name": "method", "type": "enum", "label": "Method" },
-        { "name": "path", "type": "string", "label": "Path" }
+        {
+          "name": "method",
+          "kind": "enum",
+          "label": "Method",
+          "options": ["GET", "POST"]
+        },
+        { "name": "path", "kind": "string", "label": "Path" }
       ]
     }
   ]
@@ -188,12 +193,19 @@ headings are localised.
 | AC1, AC7–AC9, AC11, AC12 | integration             | `apps/api/test/integration/extraction.spec.ts`       |
 | AC2, AC10                | API e2e                 | `apps/api/test/e2e/extraction.spec.ts`               |
 | response shapes          | contract                | `apps/api/test/contract/extraction.spec.ts`          |
+| AC2, AC8, AC10, AC13     | unit (jsdom)            | `apps/web/src/features/extraction/*.test.ts(x)`      |
 | AC13                     | component (browser)     | `apps/web/cypress/component/extraction-table.cy.tsx` |
 | AC13–AC15                | browser e2e             | `apps/web/e2e/extraction.spec.ts`                    |
 
 AC3 to AC5 need a model that returns something invalid on demand, and then
 something valid. No real provider can be asked for that sequence; the scripted
 mock is told.
+
+AC13 needs a stream with real time between its events. Playwright's request
+interception can only answer with a whole body, which would pass whether the
+table filled a row at a time or all at once at the end, so the browser suite
+runs against a small server (`apps/web/e2e/support/extract-stub.mjs`) that
+writes one event per interval over a real socket.
 
 ## Open questions
 

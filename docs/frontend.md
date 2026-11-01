@@ -19,13 +19,14 @@ apps/web/src/
   features/
     documents/         upload, library, live progress
     chat/              conversation, answers, sources
+    extraction/        schema chooser, the streaming table
   store/               the RTK Query client
   i18n/                routing, request config, message loading
 ```
 
 Features own their own components, hooks, types and tests. A `features/` folder
 that needs something from another feature is a sign the boundary is wrong — so
-far neither has.
+far none has.
 
 The design system lives in `packages/ui` and is consumed as **source**, not as a
 build output, so the app and Storybook render against exactly the same code and
@@ -102,6 +103,41 @@ derived values live in `AssistantMessage` so the memo has stable inputs.
 
 Found by a browser test asserting focus restoration. No unit test would have
 caught it, because every unit test renders once.
+
+## A table that fills as rows arrive
+
+The extraction view reads `POST /extract/stream` with `fetch` and a reader, not
+`EventSource` — `EventSource` is GET-only, and putting the schema and the
+reader's query into a URL would put their query text into every access log
+between here and there.
+
+Rows are **appended, never replaced or reordered**, because the server only
+sends completed items. That is what makes keying them by position safe, and it
+is what keeps a row's DOM node alive when the next row lands. A remount
+mid-stream would reset scroll and drop focus, which is the same class of bug as
+the memoisation above, so there is a browser test that marks the first row's
+element and checks the mark survives two more rows arriving.
+
+The columns come from `GET /extract/schemas`, not from a list held here, so a
+schema added on the server appears in the chooser and gets a table with no
+front-end release.
+
+Two decoding details that are silent when missed:
+
+- `TextDecoder` is used with `{ stream: true }`: a multi-byte character can be
+  split across two reads, and decoding each alone turns the `ã` in _visão_ into
+  a replacement character.
+- The buffer keeps whatever follows the last `\n\n`, because a frame can arrive
+  in two pieces.
+
+Both have a test that fails if the handling is removed.
+
+Values go through a helper rather than `String()`. A field the schema says is a
+string can arrive as an object, and `[object Object]` in a cell is a rendering
+bug wearing a value's clothes — anything that is not a primitive is shown as
+JSON instead, which is ugly and honest.
+
+→ [`structured-output.md`](./structured-output.md).
 
 ## Internationalisation
 
@@ -187,5 +223,12 @@ request/response endpoints, and chat would still belong to `useChat`.
 The end-to-end suite stubs the API. The journey under test is the interface;
 that the real API behaves that way is its own e2e and contract suites' job, and
 stubbing keeps this deterministic, container-free and free.
+
+One exception: the extraction stream. Playwright's interception can only answer
+with a whole body, so a stubbed route would pass whether the table filled a row
+at a time or all at once at the end — the criterion would be assumed rather than
+tested. That endpoint is served by a small real server
+(`e2e/support/extract-stub.mjs`) that writes one event per interval over a
+socket, started as a second `webServer` in the Playwright config.
 
 → [`testing.md`](./testing.md).
