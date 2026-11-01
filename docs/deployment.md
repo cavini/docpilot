@@ -24,6 +24,27 @@ settings it names exist now and the deploy comes first.
 `NEXT_PUBLIC_` values are read at build time, so changing one needs a rebuild
 rather than a restart.
 
+### What one client can do
+
+Two limits on every route. The burst limit bounds how fast; the daily limit
+bounds how much, and only the second bounds cost — a burst limit resets, so on
+its own it lets one client sit at it all day.
+
+| Route group | Burst        | Per day | Roughly         |
+| ----------- | ------------ | ------- | --------------- |
+| Reads       | 120 / minute | 5,000   | Free            |
+| Questions   | 10 / 5 min   | 30      | 3 cents         |
+| Uploads     | 5 / 15 min   | 10      | Depends on size |
+
+Thirty questions is half as much again as a thorough look around, measured at
+about twenty. Fifteen different visitors can each have that before a fifty-cent
+daily ceiling is reached.
+
+**These are per client address, not per person.** There is no identity behind
+one shared key, so two people on one office network share a budget and one
+person with a phone has two. It bounds blast radius. Real per-person limits need
+per-person credentials.
+
 ### Choosing a model
 
 The provider's own per-minute limits matter as much as the price here, because
@@ -40,6 +61,11 @@ they all land inside the same minute.
 room for an agent turn without the provider refusing half of it. The limits
 above are what a new account gets and rise with spend, so check the project's
 own limits page rather than trusting this table.
+
+`MAX_UPLOAD_MB` is worth lowering specifically. At 20 MB a single upload costs
+about ten cents to embed, which is a fifth of a fifty-cent day in one action; at
+5 MB it is under three. Nobody demonstrating a document-answering app needs to
+upload twenty megabytes.
 
 Whatever you pick has to be in `llm/pricing.ts`. The daily ceiling sums a cost
 column, and a model this build has no price for records every call as free — so

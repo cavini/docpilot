@@ -82,11 +82,36 @@ export class TooManyRequestsError extends DomainError {
    */
   constructor(readonly retryAfterSeconds: number) {
     super(
-      `Too many requests. This is a small demo, so the limits are low. ` +
-        `Try again in ${String(retryAfterSeconds)} seconds.`,
+      'Too many requests. This is a small demo paid for out of pocket, so the ' +
+        `limits are low. Try again in ${humanDuration(retryAfterSeconds)}.`,
       { retryAfterSeconds },
     );
   }
+}
+
+/**
+ * Renders a wait as something a person reads rather than counts.
+ *
+ * A daily limit expires in tens of thousands of seconds, and "try again in
+ * 71,384 seconds" is a number a reader has to do arithmetic on to act on.
+ *
+ * @param seconds How long to wait.
+ * @returns A phrase such as "about 2 hours".
+ */
+function humanDuration(seconds: number): string {
+  if (seconds < 60) {
+    return `${String(Math.max(1, Math.round(seconds)))} seconds`;
+  }
+
+  if (seconds < 3_600) {
+    const minutes = Math.round(seconds / 60);
+
+    return minutes === 1 ? 'a minute' : `about ${String(minutes)} minutes`;
+  }
+
+  const hours = Math.round(seconds / 3_600);
+
+  return hours === 1 ? 'about an hour' : `about ${String(hours)} hours`;
 }
 
 /**
