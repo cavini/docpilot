@@ -1,0 +1,19 @@
+# Everything the build does not read. Keeping this tight matters more than
+# usual here: the build context is the whole monorepo.
+node_modules
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+**/test-results
+**/playwright-report
+**/cypress/videos
+**/cypress/screenshots
+**/storybook-static
+uploads
+.git
+.env
+.env.*
+!.env.example

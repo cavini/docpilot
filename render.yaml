@@ -1,0 +1,85 @@
+# Render blueprint for the API.
+#
+# Only the API lives here. The web app is a Next application and Vercel serves
+# it for free without sleeping, which the free tier here does not - and two
+# always-on services would not fit inside one free allowance anyway.
+services:
+  - type: web
+    name: docpilot-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    plan: free
+    # Matches the Neon branch's region (us-east-2). Retrieval makes several
+    # round trips per answer, so a cross-country hop is latency paid on every
+    # one of them.
+    region: ohio
+    healthCheckPath: /health/live
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Render sets PORT; the application reads API_PORT.
+      - key: API_PORT
+        value: 10000
+
+      # Set in the dashboard, not here: these carry passwords, and a blueprint
+      # is committed to a public repository.
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+
+      # The web app's origin. Without it the browser refuses every response.
+      - key: CORS_ORIGIN
+        sync: false
+
+      # The gate. At least 24 characters or the application refuses to start.
+      - key: DEMO_API_KEY
+        sync: false
+
+      # Ephemeral on a free instance, which costs nothing that matters:
+      # chunks and embeddings live in Postgres, and the original bytes are
+      # only read while a document is being ingested.
+      - key: STORAGE_DRIVER
+        value: local
+      - key: LOCAL_STORAGE_DIR
+        value: /app/uploads
+
+      # One instance, so it consumes its own queue.
+      - key: WORKER_MODE
+        value: inline
+
+      # Starts on the mock so the first deploy costs nothing and proves the
+      # pipeline. Switching to a real provider is this plus a key, plus a
+      # re-seed - the stored vectors are mock-made and meaningless to a real
+      # embedder.
+      - key: LLM_PROVIDER
+        value: mock
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CHAT_MODEL
+        value: gpt-5-mini
+      - key: EMBEDDING_PROVIDER
+        value: mock
+
+      # Guardrails. Lower than the defaults because this one is public and
+      # paid for out of pocket.
+      - key: DAILY_BUDGET_USD
+        value: 0.50
+      - key: MAX_DOCUMENTS
+        value: 50
+      - key: MAX_UPLOAD_MB
+        value: 5
+      - key: RATE_LIMIT_ENABLED
+        value: true
+
+      # Render terminates TLS in front of the container and sets
+      # X-Forwarded-For, so the per-client limits count the client rather than
+      # the proxy.
+      - key: TRUST_PROXY
+        value: true
+
+      - key: LOG_LEVEL
+        value: info

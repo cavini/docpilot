@@ -51,6 +51,19 @@ export const envSchema = z
 
     // Data stores
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required').describe('Postgres connection URL'),
+
+    /**
+     * A direct Postgres connection, bypassing any connection pooler.
+     *
+     * Only migrations use it. A pooler in transaction mode can hand
+     * successive statements to different backends, which a migration - a
+     * sequence of statements that assume they share a session - cannot
+     * survive. Neon publishes both endpoints for exactly this reason.
+     *
+     * Absent on a deployment with no pooler in front, where `DATABASE_URL`
+     * is already direct.
+     */
+    DATABASE_URL_UNPOOLED: z.string().optional().describe('Direct Postgres URL, for migrations'),
     REDIS_URL: z
       .string()
       .min(1, 'REDIS_URL is required')
