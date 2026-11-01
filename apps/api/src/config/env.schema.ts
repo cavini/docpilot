@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { VERSION } from '../version.js';
 
 import { EMBEDDING_DIMENSIONS } from '../db/schema/index.js';
+import { hasKnownPrice } from '../llm/pricing.js';
 
 /** Parses the strings `true` and `false` that environment variables carry. */
 const booleanFromString = (defaultValue: boolean) =>
@@ -199,6 +200,44 @@ export const envSchema = z
           `EMBEDDING_DIMENSIONS must be ${String(EMBEDDING_DIMENSIONS)} to match the database ` +
           'column. Changing it means a migration and re-embedding the whole corpus.',
       });
+    }
+
+    /*
+     * A spend ceiling can only work if every call it has to count has a
+     * price. `calculateCost` returns zero for a model this build has never
+     * heard of, which is the right default for a ledger - a recorded call
+     * with no price is visible, a dropped one is not - and exactly the wrong
+     * one for a ceiling, because every call would look free and the ceiling
+     * would never fire.
+     *
+     * So: refuse to start rather than run with the only money protection
+     * silently off. The fix is one line in `llm/pricing.ts`.
+     */
+    if (env.DAILY_BUDGET_USD > 0) {
+      if (env.LLM_PROVIDER !== 'mock' && !hasKnownPrice(env.LLM_PROVIDER, env.CHAT_MODEL)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['CHAT_MODEL'],
+          message:
+            `DAILY_BUDGET_USD is set, but "${env.CHAT_MODEL}" has no price in ` +
+            'llm/pricing.ts, so its calls would record as free and the ceiling would ' +
+            'never fire. Add it there, or unset DAILY_BUDGET_USD to run without a ceiling.',
+        });
+      }
+
+      if (
+        env.EMBEDDING_PROVIDER !== 'mock' &&
+        !hasKnownPrice(env.EMBEDDING_PROVIDER, env.EMBEDDING_MODEL)
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['EMBEDDING_MODEL'],
+          message:
+            `DAILY_BUDGET_USD is set, but "${env.EMBEDDING_MODEL}" has no price in ` +
+            'llm/pricing.ts, so embedding would record as free and the ceiling would ' +
+            'never fire. Add it there, or unset DAILY_BUDGET_USD to run without a ceiling.',
+        });
+      }
     }
 
     if (env.CHUNK_OVERLAP_TOKENS >= env.CHUNK_SIZE_TOKENS) {

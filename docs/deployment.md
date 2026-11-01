@@ -24,6 +24,28 @@ settings it names exist now and the deploy comes first.
 `NEXT_PUBLIC_` values are read at build time, so changing one needs a rebuild
 rather than a restart.
 
+### Choosing a model
+
+The provider's own per-minute limits matter as much as the price here, because
+one agent turn is up to `AGENT_MAX_STEPS` model calls — six by default — and
+they all land inside the same minute.
+
+| Model        | Price in / out per 1M | A new account's limit | One agent turn |
+| ------------ | --------------------- | --------------------- | -------------- |
+| `gpt-5`      | $1.25 / $10.00        | 3 requests/min        | Does not fit   |
+| `gpt-5-mini` | $0.25 / $2.00         | 10 requests/min       | Fits           |
+| `gpt-5-nano` | $0.05 / $0.40         | 10 requests/min       | Fits           |
+
+`gpt-5-mini` is the one to start with: five times cheaper than `gpt-5`, and with
+room for an agent turn without the provider refusing half of it. The limits
+above are what a new account gets and rise with spend, so check the project's
+own limits page rather than trusting this table.
+
+Whatever you pick has to be in `llm/pricing.ts`. The daily ceiling sums a cost
+column, and a model this build has no price for records every call as free — so
+the application refuses to start in that combination rather than running with
+the only money protection silently off.
+
 Then check the first lines of the log. Every guard is named there, and the
 dangerous states are the loud ones:
 

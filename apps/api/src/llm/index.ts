@@ -1,5 +1,6 @@
 export { EmbedderService } from './embedder.service.js';
 export { LlmModule } from './llm.module.js';
+export { describeProviderFailure } from './provider-error.js';
 export {
   PRICING,
   PRICING_VERIFIED_ON,

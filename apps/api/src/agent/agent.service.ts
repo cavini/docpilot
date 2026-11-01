@@ -22,7 +22,7 @@ import { ENV } from '../config/env.tokens.js';
 import { type Database } from '../db/database.type.js';
 import { DATABASE } from '../db/db.tokens.js';
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service.js';
-import { CANNED_MOCK_AGENT_SCRIPT, UsageService } from '../llm/index.js';
+import { CANNED_MOCK_AGENT_SCRIPT, describeProviderFailure, UsageService } from '../llm/index.js';
 import { RetrievalService } from '../retrieval/index.js';
 import { AGENT_SYSTEM_PROMPT, STEP_LIMIT_NOTICE } from './agent.prompt.js';
 import {
@@ -264,7 +264,7 @@ export class AgentService {
                 'agent stream failed',
               );
 
-              return 'The answer could not be completed.';
+              return describeProviderFailure(error);
             },
           }),
         );
@@ -279,7 +279,7 @@ export class AgentService {
       onError: (error: unknown) => {
         this.logger.error({ err: error }, 'agent stream aborted');
 
-        return 'The answer could not be completed.';
+        return describeProviderFailure(error);
       },
     });
   }

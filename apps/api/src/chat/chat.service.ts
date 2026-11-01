@@ -6,7 +6,7 @@ import { InvalidRequestError } from '../common/errors/index.js';
 import { BudgetService } from '../budget/index.js';
 import { type Env } from '../config/env.schema.js';
 import { ENV } from '../config/env.tokens.js';
-import { calculateCost, UsageService } from '../llm/index.js';
+import { calculateCost, describeProviderFailure, UsageService } from '../llm/index.js';
 import { type RetrievedChunk, RetrievalService } from '../retrieval/index.js';
 import { CHAT_MODEL_FACTORY, type ChatModelFactory } from './chat.tokens.js';
 import { type Citation, resolveCitations } from './citations.js';
@@ -214,7 +214,7 @@ export class ChatService {
                 'chat stream failed',
               );
 
-              return 'The answer could not be completed.';
+              return describeProviderFailure(error);
             },
           }),
         );
@@ -231,7 +231,7 @@ export class ChatService {
       onError: (error: unknown) => {
         this.logger.error({ err: error }, 'chat stream aborted');
 
-        return 'The answer could not be completed.';
+        return describeProviderFailure(error);
       },
     });
   }
