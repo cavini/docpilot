@@ -1,3 +1,15 @@
+/** Extra dictionary entries to splice into the catalog, for hostile fixtures. */
+export interface PdfExtras {
+  /**
+   * Raw dictionary entries added to `/Catalog`.
+   *
+   * Used to build PDFs that carry the things a reader is right to worry
+   * about - embedded JavaScript, an auto-run action, an embedded file - so a
+   * test can assert they are inert rather than assume it.
+   */
+  catalog?: string;
+}
+
 /** Escapes the characters that are special inside a PDF string literal. */
 function escapePdfText(text: string): string {
   return text.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
@@ -20,7 +32,7 @@ function escapePdfText(text: string): string {
  * const bytes = buildPdf([['Authentication'], ['Rate limiting']]);
  * ```
  */
-export function buildPdf(pages: string[][]): Uint8Array {
+export function buildPdf(pages: string[][], extras: PdfExtras = {}): Uint8Array {
   const objects: string[] = [];
   const pageObjectNumbers: number[] = [];
 
@@ -48,7 +60,7 @@ export function buildPdf(pages: string[][]): Uint8Array {
     next = contentObject + 1;
   }
 
-  objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+  objects[1] = `<< /Type /Catalog /Pages 2 0 R${extras.catalog === undefined ? '' : ` ${extras.catalog}`} >>`;
   objects[2] =
     `<< /Type /Pages /Kids [${pageObjectNumbers.map((n) => `${String(n)} 0 R`).join(' ')}] ` +
     `/Count ${String(pages.length)} >>`;
@@ -78,4 +90,31 @@ export function buildPdf(pages: string[][]): Uint8Array {
     `startxref\n${String(xrefOffset)}\n%%EOF\n`;
 
   return new TextEncoder().encode(body + xref + trailer);
+}
+
+/**
+ * Builds a PDF that carries everything a reader is right to worry about.
+ *
+ * An `/OpenAction` running JavaScript, a named `/JavaScript` entry, and a
+ * document-level action - the three ways a PDF asks a viewer to execute
+ * something on open. Plus a line of text, so a test can tell "nothing ran"
+ * apart from "nothing was read".
+ *
+ * The payload writes to a global that the test checks afterwards. If the text
+ * extractor ever executed it, the global would be set and the test would
+ * fail - which is a far stronger assertion than reading the library's docs.
+ *
+ * @param marker Name of the global the payload would set if it ran.
+ * @returns The PDF's bytes.
+ */
+export function buildHostilePdf(marker: string): Uint8Array {
+  const payload = `app.alert('x'); globalThis['${marker}'] = true;`;
+  const action = `<< /Type /Action /S /JavaScript /JS (${escapePdfText(payload)}) >>`;
+
+  return buildPdf([['Lumen billing creates invoices and records payments.']], {
+    catalog:
+      `/OpenAction ${action} ` +
+      `/AA << /WC ${action} >> ` +
+      `/Names << /JavaScript << /Names [(evil) ${action}] >> >>`,
+  });
 }
