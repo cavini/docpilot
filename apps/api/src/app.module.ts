@@ -3,6 +3,7 @@ import { type DynamicModule, Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 
 import { AgentModule } from './agent/agent.module.js';
+import { BudgetModule } from './budget/budget.module.js';
 import { ChatModule } from './chat/chat.module.js';
 import { CommonModule } from './common/common.module.js';
 import { ConfigModule } from './config/config.module.js';
@@ -43,6 +44,8 @@ import { StorageModule } from './storage/storage.module.js';
     EventEmitterModule.forRoot(),
     DbModule,
     RedisModule,
+    // After DbModule, because the ceiling is read from the usage ledger.
+    BudgetModule,
     StorageModule,
     FeatureFlagsModule,
     HealthModule,
