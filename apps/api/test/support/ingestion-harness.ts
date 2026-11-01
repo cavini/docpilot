@@ -5,6 +5,10 @@ import { type Queue } from 'bullmq';
 import { eq, sql } from 'drizzle-orm';
 
 import { AppModule } from '../../src/app.module.js';
+import { BudgetService } from '../../src/budget/index.js';
+import { type Env } from '../../src/config/env.schema.js';
+import { ENV } from '../../src/config/env.tokens.js';
+import { loadEnv } from '../../src/config/load-env.js';
 import { type Database } from '../../src/db/database.type.js';
 import { DATABASE } from '../../src/db/db.tokens.js';
 import { chunks, documents } from '../../src/db/schema/index.js';
@@ -24,6 +28,14 @@ export interface IngestionHarness {
   close: () => Promise<void>;
 }
 
+/** Providers a test may replace, for the guards that depend on them. */
+export interface HarnessOverrides {
+  /** Merged over the loaded environment, for a limit a test needs to set. */
+  env?: Partial<Env>;
+  /** Stands in for the spend ceiling, to exercise the exhausted path. */
+  budget?: Partial<BudgetService>;
+}
+
 /**
  * Starts the application against the test containers.
  *
@@ -37,10 +49,26 @@ export interface IngestionHarness {
  * `test/integration/worker.spec.ts`, which is the one place a job travels
  * through Redis to a consuming worker.
  */
-export async function createIngestionHarness(): Promise<IngestionHarness> {
-  const moduleRef = await Test.createTestingModule({
+export async function createIngestionHarness(
+  overrides: HarnessOverrides = {},
+): Promise<IngestionHarness> {
+  let builder = Test.createTestingModule({
     imports: [AppModule.forRoot({ runWorker: false })],
-  }).compile();
+  });
+
+  if (overrides.env !== undefined) {
+    // Spread over the loaded environment rather than replacing it: a test
+    // that cares about one limit should not have to restate the database URL.
+    const merged = { ...loadEnv(process.env), ...overrides.env };
+
+    builder = builder.overrideProvider(ENV).useValue(merged);
+  }
+
+  if (overrides.budget !== undefined) {
+    builder = builder.overrideProvider(BudgetService).useValue(overrides.budget);
+  }
+
+  const moduleRef = await builder.compile();
   const app = moduleRef.createNestApplication();
   await app.init();
 

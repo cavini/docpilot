@@ -1,5 +1,7 @@
 export {
+  BudgetExhaustedError,
   ConflictError,
+  CorpusFullError,
   DependencyUnavailableError,
   DomainError,
   InvalidRequestError,
