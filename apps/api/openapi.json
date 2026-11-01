@@ -1094,12 +1094,18 @@
           },
           "usage": {
             "$ref": "#/components/schemas/AnswerUsageDto"
+          },
+          "degraded": {
+            "type": "boolean",
+            "description": "True when the day's spend ceiling was reached and the mock answered.\n\nReported rather than hidden: a reader comparing a canned answer against\nthe documents deserves to know which one they are reading.",
+            "example": false
           }
         },
         "required": [
           "answer",
           "citations",
-          "usage"
+          "usage",
+          "degraded"
         ]
       },
       "ConversationSummaryDto": {
@@ -1540,6 +1546,11 @@
           },
           "usage": {
             "$ref": "#/components/schemas/ExtractionUsageDto"
+          },
+          "degraded": {
+            "type": "boolean",
+            "description": "True when the day's spend ceiling was reached and the mock produced\nthese rows.",
+            "example": false
           }
         },
         "required": [
@@ -1548,7 +1559,8 @@
           "citations",
           "dropped",
           "repaired",
-          "usage"
+          "usage",
+          "degraded"
         ]
       },
       "DocumentResponseDto": {

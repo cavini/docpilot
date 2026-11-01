@@ -18,6 +18,7 @@ import { type Citation } from './citations.js';
 export const STREAM_PARTS = {
   conversation: 'data-conversation',
   citations: 'data-citations',
+  budget: 'data-budget',
 } as const;
 
 /** Payload of the `data-conversation` part. */
@@ -28,4 +29,18 @@ export interface ConversationPart {
 /** Payload of the `data-citations` part. */
 export interface CitationsPart {
   citations: Citation[];
+}
+
+/**
+ * Payload of the `data-budget` part.
+ *
+ * Sent only when the day's spend ceiling has been reached and the answer is
+ * coming from the mock. Sent before any text, so the interface can say so
+ * above the answer rather than correcting itself afterwards.
+ */
+export interface BudgetPart {
+  /** Always true. The part is absent when a real provider answered. */
+  degraded: true;
+  /** When the ceiling lifts, as an ISO instant. */
+  resetsAt: string | null;
 }

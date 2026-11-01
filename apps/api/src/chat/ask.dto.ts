@@ -92,4 +92,13 @@ export class AskResponseDto {
 
   @ApiProperty({ type: AnswerUsageDto })
   usage: AnswerUsageDto;
+
+  /**
+   * True when the day's spend ceiling was reached and the mock answered.
+   *
+   * Reported rather than hidden: a reader comparing a canned answer against
+   * the documents deserves to know which one they are reading.
+   */
+  @ApiProperty({ example: false })
+  degraded: boolean;
 }

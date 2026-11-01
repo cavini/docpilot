@@ -1,4 +1,10 @@
-import { createScriptedLanguageModel, type ScriptedResponse } from '@docpilot/testing';
+import {
+  budgetAllowing,
+  budgetExhausted,
+  type BudgetLike,
+  createScriptedLanguageModel,
+  type ScriptedResponse,
+} from '@docpilot/testing';
 
 import { type Env } from '../config/env.schema.js';
 import { type UsageService } from '../llm/index.js';
@@ -33,7 +39,10 @@ function asArrayOutput(items: unknown): ScriptedResponse {
 }
 
 /** Builds the service with everything substituted. */
-function createService(options: { results?: ScoredChunk[]; script?: ScriptedResponse[] } = {}) {
+function createService(
+  options: { results?: ScoredChunk[]; script?: ScriptedResponse[]; budget?: BudgetLike } = {},
+) {
+  const budget = options.budget ?? budgetAllowing();
   const search = jest.fn().mockResolvedValue({
     results: options.results ?? [chunk(1), chunk(2)],
     tookMs: 5,
@@ -52,10 +61,12 @@ function createService(options: { results?: ScoredChunk[]; script?: ScriptedResp
       { record } as unknown as UsageService,
       logger as never,
       chatModel,
+      budget as never,
     ),
     search,
     record,
     model,
+    chatModel,
   };
 }
 
@@ -274,5 +285,39 @@ describe('ExtractionService.stream', () => {
     await drain(service.stream({ schema: 'api_endpoints' }));
 
     expect(record).toHaveBeenCalledWith(expect.objectContaining({ operation: 'structured' }));
+  });
+
+  describe("when the day's spend ceiling has been reached", () => {
+    it('AC11: extracts from the mock and says so on the result', async () => {
+      const { service, chatModel } = createService({ budget: budgetExhausted() });
+
+      const result = await service.extract({ schema: 'api_endpoints' });
+
+      expect(result.degraded).toBe(true);
+      expect(chatModel).toHaveBeenCalledWith(expect.anything(), { forceMock: true });
+    });
+
+    it('AC11: labels the stream on its first event, before any row', async () => {
+      const { service } = createService({ budget: budgetExhausted() });
+      const events = [];
+
+      for await (const event of service.stream({ schema: 'api_endpoints' })) {
+        events.push(event);
+      }
+
+      // The table is labelled from the moment it has anything in it, rather
+      // than after the reader has started reading rows.
+      expect(events[0]).toMatchObject({
+        type: 'schema',
+        degraded: true,
+        resetsAt: '2026-11-02T00:00:00.000Z',
+      });
+    });
+
+    it('AC10: reports no degradation when a real provider answered', async () => {
+      const { service } = createService();
+
+      expect((await service.extract({ schema: 'api_endpoints' })).degraded).toBe(false);
+    });
   });
 });

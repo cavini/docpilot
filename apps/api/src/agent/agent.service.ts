@@ -16,6 +16,7 @@ import { ConversationsService } from '../chat/conversations.service.js';
 import { buildHistory, renderHistory } from '../chat/history.js';
 import { STREAM_PARTS } from '../chat/stream-parts.js';
 import { InvalidRequestError } from '../common/errors/index.js';
+import { BudgetService } from '../budget/index.js';
 import { type Env } from '../config/env.schema.js';
 import { ENV } from '../config/env.tokens.js';
 import { type Database } from '../db/database.type.js';
@@ -43,6 +44,8 @@ interface PendingTurn {
   steps: PromiseLike<readonly unknown[]>;
   finishReason: PromiseLike<string>;
   startedAt: number;
+  /** Whether the spend ceiling forced this turn onto the mock. */
+  degraded: boolean;
 }
 
 /** The one tool that writes, and so the one that needs approval. */
@@ -91,6 +94,7 @@ export class AgentService {
     private readonly flags: FeatureFlagsService,
     private readonly logger: PinoLogger,
     @Inject(CHAT_MODEL_FACTORY) private readonly chatModel: ChatModelFactory,
+    private readonly budget: BudgetService,
   ) {
     this.logger.setContext(AgentService.name);
   }
@@ -196,12 +200,24 @@ export class AgentService {
                 // better than failing the resume over it.
                 ignoreIncompleteToolCalls: true,
               });
+        // Announced before any text, so the interface says so above the
+        // answer rather than correcting itself once it has been read.
+        const budget = await this.budget.status();
+
+        if (budget.exhausted) {
+          writer.write({
+            type: STREAM_PARTS.budget,
+            data: { degraded: true, resetsAt: budget.resetsAt?.toISOString() ?? null },
+          });
+        }
+
         // The mock provider answers directly unless it is scripted otherwise,
         // which would make /agent look identical to /chat and hide the one
         // thing it adds. Scripted to search once and then answer, so the tool
         // step is visible without a key; only the decision to search is fake.
         const { model } = this.chatModel(
           Object.keys(tools).length > 0 ? CANNED_MOCK_AGENT_SCRIPT : undefined,
+          { forceMock: budget.exhausted },
         );
         const startedAt = Date.now();
 
@@ -234,6 +250,7 @@ export class AgentService {
           steps: result.steps,
           finishReason: result.finishReason,
           startedAt,
+          degraded: budget.exhausted,
         };
 
         writer.merge(
@@ -280,7 +297,10 @@ export class AgentService {
     let outputTokens = 0;
     let steps = 0;
 
-    const { provider, modelId } = this.chatModel();
+    // Only for the ledger's provider and model columns, so a degraded turn
+    // records as the mock it actually was rather than as the configured
+    // provider it never reached.
+    const { provider, modelId } = this.chatModel(undefined, { forceMock: pending.degraded });
 
     try {
       text = await pending.text;

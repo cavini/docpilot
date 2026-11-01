@@ -3,6 +3,7 @@ import { generateText } from 'ai';
 import { PinoLogger } from 'nestjs-pino';
 
 import { InvalidRequestError } from '../common/errors/index.js';
+import { BudgetService } from '../budget/index.js';
 import { type Env } from '../config/env.schema.js';
 import { ENV } from '../config/env.tokens.js';
 import { calculateCost, UsageService } from '../llm/index.js';
@@ -24,6 +25,13 @@ export interface Answer {
   answer: string;
   citations: Citation[];
   usage: { inputTokens: number; outputTokens: number; costUsd: number };
+  /**
+   * True when the day's spend ceiling was reached and the mock answered.
+   *
+   * Reported rather than hidden: a reader comparing a canned answer against
+   * the documents deserves to know which one they are reading.
+   */
+  degraded: boolean;
 }
 
 /** Thrown when the model returns nothing usable. */
@@ -48,6 +56,7 @@ export class AskService {
     private readonly usage: UsageService,
     private readonly logger: PinoLogger,
     @Inject(CHAT_MODEL_FACTORY) private readonly chatModel: ChatModelFactory,
+    private readonly budget: BudgetService,
   ) {
     this.logger.setContext(AskService.name);
   }
@@ -92,10 +101,14 @@ export class AskService {
         answer: DONT_KNOW_ANSWER,
         citations: [],
         usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+        degraded: false,
       };
     }
 
-    const { model, provider, modelId } = this.chatModel();
+    // Checked after retrieval, because retrieval is free and an answer about
+    // nothing costs nothing either way.
+    const degraded = !(await this.budget.allowsModelCall());
+    const { model, provider, modelId } = this.chatModel(undefined, { forceMock: degraded });
     const startedAt = Date.now();
 
     const generated = await generateText({
@@ -130,6 +143,7 @@ export class AskService {
         cited: citations.length,
         inputTokens,
         outputTokens,
+        degraded,
         durationMs: Date.now() - startedAt,
       },
       'answered',
@@ -143,6 +157,7 @@ export class AskService {
         outputTokens,
         costUsd: calculateCost(provider, modelId, inputTokens, outputTokens),
       },
+      degraded,
     };
   }
 }

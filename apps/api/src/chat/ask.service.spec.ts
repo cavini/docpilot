@@ -1,4 +1,9 @@
-import { createScriptedLanguageModel } from '@docpilot/testing';
+import {
+  budgetAllowing,
+  budgetExhausted,
+  type BudgetLike,
+  createScriptedLanguageModel,
+} from '@docpilot/testing';
 
 import { type Env } from '../config/env.schema.js';
 import { type UsageService } from '../llm/index.js';
@@ -25,8 +30,11 @@ const env = {
   MAX_OUTPUT_TOKENS: 1024,
 } as Env;
 
-function createService(options: { results?: ScoredChunk[]; answer?: string } = {}) {
+function createService(
+  options: { results?: ScoredChunk[]; answer?: string; budget?: BudgetLike } = {},
+) {
   const results = options.results ?? [chunk(1), chunk(2)];
+  const budget = options.budget ?? budgetAllowing();
   const search = jest.fn().mockResolvedValue({ results, tookMs: 5, cached: false });
   const retrieval = { search } as unknown as RetrievalService;
   const usage = { record: jest.fn().mockResolvedValue(undefined) } as unknown as UsageService;
@@ -39,7 +47,7 @@ function createService(options: { results?: ScoredChunk[]; answer?: string } = {
   }));
 
   return {
-    service: new AskService(env, retrieval, usage, logger as never, chatModel),
+    service: new AskService(env, retrieval, usage, logger as never, chatModel, budget as never),
     search,
     usage,
     chatModel,
@@ -170,5 +178,44 @@ describe('AskService', () => {
     await service.ask({ question: 'What?', requestId: 'req-7' });
 
     expect(usage.record).toHaveBeenCalledWith(expect.objectContaining({ requestId: 'req-7' }));
+  });
+
+  describe("when the day's spend ceiling has been reached", () => {
+    it('AC11: answers from the mock rather than calling a real provider', async () => {
+      const { service, chatModel } = createService({ budget: budgetExhausted() });
+
+      const answer = await service.ask({ question: 'How do I authenticate?' });
+
+      // The factory is told, rather than the factory asking. The reason a
+      // call was degraded belongs where the decision was made.
+      expect(chatModel).toHaveBeenCalledWith(undefined, { forceMock: true });
+      expect(answer.degraded).toBe(true);
+    });
+
+    it('AC11: says so in the answer rather than leaving the reader to guess', async () => {
+      const { service } = createService({ budget: budgetExhausted() });
+
+      expect((await service.ask({ question: 'anything' })).degraded).toBe(true);
+    });
+
+    it('AC10: says nothing when a real provider answered', async () => {
+      const { service, chatModel } = createService();
+
+      expect((await service.ask({ question: 'anything' })).degraded).toBe(false);
+      expect(chatModel).toHaveBeenCalledWith(undefined, { forceMock: false });
+    });
+
+    it('AC16: refuses an over-long question before the ceiling is even consulted', async () => {
+      const allows = jest.fn().mockResolvedValue(true);
+      const { service } = createService({
+        budget: { ...budgetAllowing(), allowsModelCall: allows },
+      });
+
+      await expect(service.ask({ question: 'x'.repeat(1_001) })).rejects.toThrow(/longer than/);
+
+      // Nothing was spent, so nothing needed checking. The length limit is
+      // the cheapest guard and belongs first.
+      expect(allows).not.toHaveBeenCalled();
+    });
   });
 });

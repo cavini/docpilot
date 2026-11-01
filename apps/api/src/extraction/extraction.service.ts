@@ -12,6 +12,7 @@ import { PinoLogger } from 'nestjs-pino';
 
 import { CHAT_MODEL_FACTORY, type ChatModelFactory } from '../chat/chat.tokens.js';
 import { InvalidRequestError } from '../common/errors/index.js';
+import { BudgetService } from '../budget/index.js';
 import { type Env } from '../config/env.schema.js';
 import { ENV } from '../config/env.tokens.js';
 import { calculateCost, cannedMockExtraction, UsageService } from '../llm/index.js';
@@ -47,6 +48,8 @@ export interface ExtractionResult {
   /** Whether the first attempt failed and had to be repaired. */
   repaired: boolean;
   usage: { inputTokens: number; outputTokens: number; costUsd: number };
+  /** Whether the day's spend ceiling forced this onto the mock. */
+  degraded: boolean;
 }
 
 /** Thrown when extraction fails twice: once, then once with the error. */
@@ -75,6 +78,7 @@ export class ExtractionService {
     private readonly usage: UsageService,
     private readonly logger: PinoLogger,
     @Inject(CHAT_MODEL_FACTORY) private readonly chatModel: ChatModelFactory,
+    private readonly budget: BudgetService,
   ) {
     this.logger.setContext(ExtractionService.name);
   }
@@ -173,13 +177,17 @@ export class ExtractionService {
         dropped: 0,
         repaired: false,
         usage: { inputTokens: 0, outputTokens: 0, costUsd: 0 },
+        degraded: false,
       };
     }
 
     // The mock answers prose unless scripted otherwise, so the endpoint would
     // be undemonstrable without a key. The script is obviously canned - see
     // `cannedMockExtraction`.
-    const { model, provider, modelId } = this.chatModel(cannedMockExtraction(name));
+    const degraded = !(await this.budget.allowsModelCall());
+    const { model, provider, modelId } = this.chatModel(cannedMockExtraction(name), {
+      forceMock: degraded,
+    });
     const startedAt = Date.now();
     let inputTokens = 0;
     let outputTokens = 0;
@@ -233,7 +241,10 @@ export class ExtractionService {
 
     const { items, dropped } = validateItems(outcome.produced, entry);
 
-    this.logger.info({ schema: name, items: items.length, dropped, repaired }, 'extracted');
+    this.logger.info(
+      { schema: name, items: items.length, dropped, repaired, degraded },
+      'extracted',
+    );
 
     return {
       schema: name,
@@ -246,6 +257,7 @@ export class ExtractionService {
         outputTokens,
         costUsd: calculateCost(provider, modelId, inputTokens, outputTokens),
       },
+      degraded,
     };
   }
 
@@ -263,17 +275,31 @@ export class ExtractionService {
    *
    * @throws {InvalidRequestError} If the schema is unknown.
    */
-  async *stream(
-    options: ExtractOptions,
-  ): AsyncGenerator<
-    | { type: 'schema'; schema: SchemaName; citations: ExtractionCitation[] }
+  async *stream(options: ExtractOptions): AsyncGenerator<
+    | {
+        type: 'schema';
+        schema: SchemaName;
+        citations: ExtractionCitation[];
+        degraded: boolean;
+        resetsAt: string | null;
+      }
     | { type: 'item'; item: unknown }
     | { type: 'done'; dropped: number }
     | { type: 'error'; message: string }
   > {
     const { name, entry, citations, context } = await this.prepare(options);
 
-    yield { type: 'schema', schema: name, citations };
+    // On the first event, before any row, so the table is labelled from the
+    // moment it has anything in it.
+    const budget = await this.budget.status();
+
+    yield {
+      type: 'schema',
+      schema: name,
+      citations,
+      degraded: budget.exhausted,
+      resetsAt: budget.resetsAt?.toISOString() ?? null,
+    };
 
     if (citations.length === 0) {
       yield { type: 'done', dropped: 0 };
@@ -281,7 +307,9 @@ export class ExtractionService {
       return;
     }
 
-    const { model, provider, modelId } = this.chatModel(cannedMockExtraction(name));
+    const { model, provider, modelId } = this.chatModel(cannedMockExtraction(name), {
+      forceMock: budget.exhausted,
+    });
     const startedAt = Date.now();
     const seen = new Set<string>();
     let dropped = 0;

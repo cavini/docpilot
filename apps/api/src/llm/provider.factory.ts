@@ -174,7 +174,16 @@ export interface ResolvedChatModel {
 export function createChatModel(
   env: Env,
   mockScript: string | ScriptedResponse[] = CANNED_MOCK_ANSWER,
+  options: { forceMock?: boolean } = {},
 ): ResolvedChatModel {
+  if (options.forceMock === true) {
+    // The day's spend ceiling has been reached. Falling through to the mock
+    // below rather than throwing, because a demo that still streams, cites
+    // and shows its tool steps is worth more than an error page - and the
+    // canned text says what it is.
+    return mockChatModel(mockScript);
+  }
+
   if (env.LLM_PROVIDER === 'anthropic') {
     if (!env.ANTHROPIC_API_KEY) {
       throw new Error('ANTHROPIC_API_KEY is required when LLM_PROVIDER is "anthropic".');
@@ -197,6 +206,20 @@ export function createChatModel(
     return { model: openai(env.CHAT_MODEL), provider: 'openai', modelId: env.CHAT_MODEL };
   }
 
+  return mockChatModel(mockScript);
+}
+
+/**
+ * The deterministic model, however it was arrived at.
+ *
+ * Shared by the `mock` provider and by the spend ceiling, so a degraded
+ * answer is indistinguishable from a locally mocked one - including in the
+ * usage ledger, where both record as provider `mock` costing nothing.
+ *
+ * @param mockScript What it should answer.
+ * @returns The model, priced as free.
+ */
+function mockChatModel(mockScript: string | ScriptedResponse[]): ResolvedChatModel {
   return {
     model: createScriptedLanguageModel(
       typeof mockScript === 'string' ? [{ text: mockScript }] : mockScript,

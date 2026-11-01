@@ -12,4 +12,9 @@ export {
   type ConversationWithMessages,
 } from './conversations.service.js';
 export { buildHistory, renderHistory, type BuiltHistory, type HistoryTurn } from './history.js';
-export { STREAM_PARTS, type CitationsPart, type ConversationPart } from './stream-parts.js';
+export {
+  STREAM_PARTS,
+  type BudgetPart,
+  type CitationsPart,
+  type ConversationPart,
+} from './stream-parts.js';

@@ -1,4 +1,9 @@
-import { createScriptedLanguageModel } from '@docpilot/testing';
+import {
+  budgetAllowing,
+  budgetExhausted,
+  type BudgetLike,
+  createScriptedLanguageModel,
+} from '@docpilot/testing';
 import { type UIMessageChunk } from 'ai';
 
 import { type Env } from '../config/env.schema.js';
@@ -39,6 +44,7 @@ const CONVERSATION: ConversationRow = {
 /** Builds the service with every dependency substituted. */
 function createService(
   options: {
+    budget?: BudgetLike;
     results?: ScoredChunk[];
     answer?: string;
     chunks?: string[];
@@ -46,6 +52,7 @@ function createService(
     previous?: Pick<MessageRow, 'role' | 'content'>[];
   } = {},
 ) {
+  const budget = options.budget ?? budgetAllowing();
   const results = options.results ?? [chunk(1), chunk(2)];
   const search = jest.fn().mockResolvedValue({ results, tookMs: 5, cached: false });
   const retrieval = { search } as unknown as RetrievalService;
@@ -72,7 +79,15 @@ function createService(
   const chatModel = jest.fn(() => ({ model, provider: 'mock', modelId: 'mock-chat' }));
 
   return {
-    service: new ChatService(env, retrieval, conversations, usage, logger as never, chatModel),
+    service: new ChatService(
+      env,
+      retrieval,
+      conversations,
+      usage,
+      logger as never,
+      chatModel,
+      budget as never,
+    ),
     search,
     conversations,
     appendTurn,
@@ -283,5 +298,45 @@ describe('ChatService', () => {
     await drain(await service.stream({ question: 'q', documentIds: ['doc-1'] }));
 
     expect(search).toHaveBeenCalledWith(expect.objectContaining({ documentIds: ['doc-1'] }));
+  });
+
+  describe("when the day's spend ceiling has been reached", () => {
+    it('AC11: announces it before any text, so nothing has to be corrected', async () => {
+      const { service } = createService({ budget: budgetExhausted() });
+
+      const chunks = await drain(await service.stream({ question: 'How do I authenticate?' }));
+      const budgetAt = chunks.findIndex((part) => part.type === STREAM_PARTS.budget);
+      const firstText = chunks.findIndex((part) => part.type === 'text-delta');
+
+      expect(budgetAt).toBeGreaterThanOrEqual(0);
+      expect(chunks[budgetAt]).toMatchObject({
+        data: { degraded: true, resetsAt: '2026-11-02T00:00:00.000Z' },
+      });
+
+      // Before the first word. A banner that appears after the answer has
+      // been read is a banner that did not do its job.
+      expect(budgetAt).toBeLessThan(firstText);
+    });
+
+    it('AC10: sends no budget part when a real provider answered', async () => {
+      const { service } = createService();
+
+      const chunks = await drain(await service.stream({ question: 'anything' }));
+
+      // Absence is the signal, so the interface has nothing to clear.
+      expect(chunks.some((part) => part.type === STREAM_PARTS.budget)).toBe(false);
+    });
+
+    it('AC11: records the turn as having cost nothing', async () => {
+      const { service, record } = createService({ budget: budgetExhausted() });
+
+      await drain(await service.stream({ question: 'anything' }));
+
+      // A degraded turn that recorded against the configured provider would
+      // make the ledger - the thing the ceiling is read from - drift.
+      expect(record).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: 'mock', model: 'mock-chat' }),
+      );
+    });
   });
 });

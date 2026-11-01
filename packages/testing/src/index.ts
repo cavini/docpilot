@@ -1,3 +1,4 @@
+export { budgetAllowing, budgetExhausted, type BudgetLike } from './budget.js';
 export { FAKER_SEED, faker, resetFaker } from './faker.js';
 export { defineFactory, type Factory, type FactoryBuilder } from './factories/define-factory.js';
 export {
