@@ -104,4 +104,58 @@ describe('loadEnv', () => {
 
     expect(message).not.toContain('sk-leak-me');
   });
+
+  describe('when a spend ceiling is set', () => {
+    const withBudget = {
+      ...minimalEnv,
+      DAILY_BUDGET_USD: '0.50',
+      LLM_PROVIDER: 'openai',
+      OPENAI_API_KEY: 'sk-test',
+      EMBEDDING_PROVIDER: 'openai',
+    } satisfies NodeJS.ProcessEnv;
+
+    it('refuses to start when the chat model has no price', () => {
+      // The ceiling sums a cost column. A model with no price records zero,
+      // so every call looks free and the ceiling never fires - which is the
+      // money protection silently off, the worst of the three outcomes.
+      expect(() => loadEnv({ ...withBudget, CHAT_MODEL: 'gpt-6-unreleased' })).toThrow(
+        /no price in llm\/pricing\.ts/,
+      );
+    });
+
+    it('names the model and says how to fix it', () => {
+      expect(() => loadEnv({ ...withBudget, CHAT_MODEL: 'gpt-6-unreleased' })).toThrow(
+        /gpt-6-unreleased[\s\S]*Add it there, or unset DAILY_BUDGET_USD/,
+      );
+    });
+
+    it('refuses to start when the embedding model has no price', () => {
+      expect(() =>
+        loadEnv({ ...withBudget, CHAT_MODEL: 'gpt-5-mini', EMBEDDING_MODEL: 'text-embedding-9' }),
+      ).toThrow(/text-embedding-9/);
+    });
+
+    it('accepts a model this build knows the price of', () => {
+      expect(() => loadEnv({ ...withBudget, CHAT_MODEL: 'gpt-5-mini' })).not.toThrow();
+      expect(() => loadEnv({ ...withBudget, CHAT_MODEL: 'gpt-5' })).not.toThrow();
+    });
+
+    it('does not care about prices when the provider is the mock', () => {
+      // Nothing is spent, so nothing needs pricing.
+      expect(() =>
+        loadEnv({ ...minimalEnv, DAILY_BUDGET_USD: '0.50', CHAT_MODEL: 'whatever' }),
+      ).not.toThrow();
+    });
+
+    it('does not care about prices when there is no ceiling to enforce', () => {
+      expect(() =>
+        loadEnv({
+          ...minimalEnv,
+          LLM_PROVIDER: 'openai',
+          OPENAI_API_KEY: 'sk-test',
+          CHAT_MODEL: 'gpt-6-unreleased',
+        }),
+      ).not.toThrow();
+    });
+  });
 });
