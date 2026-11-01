@@ -22,6 +22,24 @@ jobs:
   check:
     name: Lint, types, unit tests
     runs-on: ubuntu-latest
+    # A hung step would otherwise occupy a runner for six hours.
+    timeout-minutes: 15
+
+    services:
+      # Only the OpenAPI check needs this. It builds the real application
+      # graph, and the queue module connects eagerly and retries for ever, so
+      # without a Redis the step hangs rather than failing. Postgres is not
+      # needed: the pool connects on first query and the export makes none.
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v5
 
