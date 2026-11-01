@@ -51,3 +51,31 @@ export function describeProviderFailure(error: unknown): string {
 
   return GENERIC;
 }
+
+/**
+ * Whether this failure means the provider balance is gone.
+ *
+ * Both "too many requests this minute" and "no credit left" arrive as 429,
+ * and they need opposite responses: the first clears by waiting a minute, the
+ * second does not clear until somebody pays. Telling them apart means reading
+ * the response body, which is fine — what is unsafe is *echoing* it, because
+ * it can carry an organisation id or the tail of a prompt.
+ *
+ * Matched on the provider's stable error code rather than on prose. A wrong
+ * answer here is cheap in one direction and not the other: treating a rate
+ * limit as exhaustion would put the demo on canned answers for the rest of
+ * the day over a blip, so the match is deliberately narrow and anything
+ * unrecognised is read as a rate limit.
+ *
+ * @param error Whatever the SDK threw.
+ * @returns True only when the balance is the problem.
+ */
+export function isCreditExhausted(error: unknown): boolean {
+  if (!APICallError.isInstance(error) || error.statusCode !== 429) {
+    return false;
+  }
+
+  const body = typeof error.responseBody === 'string' ? error.responseBody : '';
+
+  return /insufficient_quota|credit_balance_exhausted|billing_hard_limit_reached/.test(body);
+}

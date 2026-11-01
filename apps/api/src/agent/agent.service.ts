@@ -22,7 +22,12 @@ import { ENV } from '../config/env.tokens.js';
 import { type Database } from '../db/database.type.js';
 import { DATABASE } from '../db/db.tokens.js';
 import { FeatureFlagsService } from '../feature-flags/feature-flags.service.js';
-import { CANNED_MOCK_AGENT_SCRIPT, describeProviderFailure, UsageService } from '../llm/index.js';
+import {
+  CANNED_MOCK_AGENT_SCRIPT,
+  describeProviderFailure,
+  isCreditExhausted,
+  UsageService,
+} from '../llm/index.js';
 import { RetrievalService } from '../retrieval/index.js';
 import { AGENT_SYSTEM_PROMPT, STEP_LIMIT_NOTICE } from './agent.prompt.js';
 import {
@@ -264,7 +269,7 @@ export class AgentService {
                 'agent stream failed',
               );
 
-              return describeProviderFailure(error);
+              return this.onProviderFailure(error);
             },
           }),
         );
@@ -279,7 +284,7 @@ export class AgentService {
       onError: (error: unknown) => {
         this.logger.error({ err: error }, 'agent stream aborted');
 
-        return describeProviderFailure(error);
+        return this.onProviderFailure(error);
       },
     });
   }
@@ -348,5 +353,27 @@ export class AgentService {
       { conversationId, outcome, steps, inputTokens, outputTokens },
       'agent turn stored',
     );
+  }
+
+  /**
+   * Turns a provider failure into a sentence, and latches an empty balance.
+   *
+   * The latch is what makes "out of credit" degrade rather than just fail.
+   * Without it every later question would be another error, and every upload
+   * a document stuck in `failed` - whereas the graceful path for a spent
+   * budget already exists and this is what connects the two.
+   *
+   * Fire and forget: the reader is waiting on a stream that has already
+   * failed, and holding it open to write a Redis key helps nobody.
+   *
+   * @param error Whatever the SDK threw.
+   * @returns What to show in place of the answer.
+   */
+  private onProviderFailure(error: unknown): string {
+    if (isCreditExhausted(error)) {
+      void this.budget.markProviderExhausted();
+    }
+
+    return describeProviderFailure(error);
   }
 }

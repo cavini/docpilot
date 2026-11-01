@@ -71,6 +71,28 @@ A document embedded by the mock would sit in the corpus returning confident
 nonsense for every future search, and nothing in the interface would ever say
 so. A refused upload is visible and recoverable; a poisoned one is neither.
 
+### Running out of credit is not the same as reaching the ceiling
+
+The ceiling is a **rate** — what a day may cost. The provider balance is a
+**total**. A deployment can be comfortably inside today's ceiling and still have
+nothing left to spend, and only the provider knows that.
+
+So when a call comes back saying the balance is gone — which is a different 429
+from "too many requests this minute", told apart by the provider's own error
+code — that verdict is latched in Redis until the spend window rolls over, and
+every path behaves exactly as it does at the configured ceiling.
+
+Without it the demo would not degrade, it would start failing: every question an
+error, every upload a document stuck in `failed` after three retries into the
+same wall. The graceful path already existed; the latch is what connects the
+provider's verdict to it.
+
+It expires with the window rather than being kept, so a top-up is picked up
+without a redeploy. Reading it is the one check that does **not** fail closed:
+the ledger ceiling is the primary protection and fails closed on its own, and if
+this one did too, a Redis blip would put the demo on canned answers for a day
+with nothing actually wrong.
+
 Two defaults worth naming:
 
 - **A ledger that cannot be read counts as exhausted.** Unknown spend is not
