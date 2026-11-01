@@ -46,6 +46,12 @@ jobs:
       # Generated from the code, so a drifted file means someone changed a
       # contract without regenerating it.
       - name: OpenAPI is up to date
+        env:
+          # The export builds the application graph, so the schema's required
+          # variables have to be present. Nothing connects - Redis is lazy and
+          # the pool is never used - so placeholders are enough.
+          DATABASE_URL: postgres://docpilot:docpilot@localhost:5432/docpilot
+          REDIS_URL: redis://localhost:6379
         run: |
           pnpm openapi:export
           git diff --exit-code apps/api/openapi.json \

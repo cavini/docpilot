@@ -11,6 +11,11 @@ onlyBuiltDependencies:
   # back to polling.
   - '@parcel/watcher'
   - '@swc/core'
+  # Downloads a platform-specific browser runner on install. Skipping it
+  # leaves a machine that has never run Cypress with no binary at all, which
+  # only shows up on a fresh checkout - a developer who has run it once keeps
+  # a cached copy and never sees the failure.
+  - cypress
   - esbuild
   - sharp
   - unrs-resolver
