@@ -5,12 +5,13 @@ import { type Job } from 'bullmq';
 import { eq } from 'drizzle-orm';
 import { PinoLogger } from 'nestjs-pino';
 
+import { BudgetService } from '../budget/index.js';
 import { type Env } from '../config/env.schema.js';
 import { ENV } from '../config/env.tokens.js';
 import { type Database } from '../db/database.type.js';
 import { DATABASE } from '../db/db.tokens.js';
 import { chunks, type DocumentRow, documents } from '../db/schema/index.js';
-import { EmbedderService } from '../llm/index.js';
+import { EmbedderService, isCreditExhausted } from '../llm/index.js';
 import { StorageService } from '../storage/storage.service.js';
 import { chunkDocument, embeddingTextFor } from './chunker/index.js';
 import { INGESTION_QUEUE, type IngestionJobData, STAGE_PROGRESS } from './ingestion.constants.js';
@@ -39,6 +40,7 @@ export class IngestionProcessor extends WorkerHost implements OnApplicationBoots
     private readonly events: EventEmitter2,
     @Inject(RUN_WORKER) private readonly runWorker: boolean,
     private readonly logger: PinoLogger,
+    private readonly budget: BudgetService,
   ) {
     super();
     this.logger.setContext(IngestionProcessor.name);
@@ -87,10 +89,18 @@ export class IngestionProcessor extends WorkerHost implements OnApplicationBoots
     } catch (error) {
       const isLastAttempt = job.attemptsMade + 1 >= (job.opts.attempts ?? 1);
       const unreadable = error instanceof UnreadableDocumentError;
+      const noCredit = isCreditExhausted(error);
 
-      // An unreadable file fails the same way every time, so retrying it only
-      // delays the answer the user is waiting for.
-      if (unreadable || isLastAttempt) {
+      if (noCredit) {
+        // Retrying cannot help, and every later upload should be refused at
+        // the door rather than retried three times into the same wall.
+        await this.budget.markProviderExhausted();
+      }
+
+      // An unreadable file fails the same way every time, and so does an
+      // empty balance, so retrying either only delays the answer the user is
+      // waiting for.
+      if (unreadable || noCredit || isLastAttempt) {
         await this.fail(documentId, error);
       }
 
@@ -193,10 +203,7 @@ export class IngestionProcessor extends WorkerHost implements OnApplicationBoots
 
   /** Records a terminal failure, with a reason a user can act on. */
   private async fail(documentId: string, error: unknown): Promise<void> {
-    const message =
-      error instanceof UnreadableDocumentError
-        ? error.message
-        : 'Ingestion failed. The document could not be processed.';
+    const message = failureMessage(error);
 
     await this.db
       .update(documents)
@@ -217,4 +224,33 @@ export class IngestionProcessor extends WorkerHost implements OnApplicationBoots
   private emit(event: IngestionEvent): void {
     this.events.emit(INGESTION_EVENT_CHANNEL, event);
   }
+}
+
+/**
+ * What a reader is told about a document that could not be ingested.
+ *
+ * Three different problems, three different things to do about them: fix the
+ * file, wait for the budget, or retry. "Ingestion failed" covers all of them
+ * and helps with none, which leaves a reader pressing Retry on a document
+ * that will never succeed until somebody tops up an account they cannot see.
+ *
+ * The provider's own message is never passed through: it can carry an
+ * organisation id or a request id, and this string is rendered in a browser.
+ *
+ * @param error Whatever the pipeline threw.
+ * @returns The reason stored on the document.
+ */
+function failureMessage(error: unknown): string {
+  if (error instanceof UnreadableDocumentError) {
+    return error.message;
+  }
+
+  if (isCreditExhausted(error)) {
+    return (
+      'This demo has no credit left to read new documents with. ' +
+      'Nothing was stored, and it can be uploaded again once the budget resets.'
+    );
+  }
+
+  return 'Ingestion failed. The document could not be processed.';
 }

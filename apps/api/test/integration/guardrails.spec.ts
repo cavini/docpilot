@@ -1,4 +1,8 @@
 import { budgetExhausted } from '@docpilot/testing';
+import { type Redis } from 'ioredis';
+
+import { BudgetService } from '../../src/budget/index.js';
+import { REDIS } from '../../src/redis/redis.tokens.js';
 
 import { documents } from '../../src/db/schema/index.js';
 import {
@@ -148,6 +152,60 @@ describe('guardrails against real infrastructure', () => {
       await expect(
         harness.documents.upload(fileFrom('two.md', docNumber(2))),
       ).resolves.toMatchObject({ deduplicated: false });
+    });
+  });
+
+  describe('when the provider says the balance is gone', () => {
+    let harness: IngestionHarness;
+
+    beforeAll(async () => {
+      // A provider that could spend something. With the mock there is
+      // nothing to protect, so the latch is deliberately never read - which
+      // is correct, and makes this the wrong environment to test it in.
+      harness = await createIngestionHarness({
+        env: { LLM_PROVIDER: 'openai', OPENAI_API_KEY: 'sk-not-used', EMBEDDING_PROVIDER: 'mock' },
+      });
+    }, 90_000);
+
+    beforeEach(async () => {
+      await harness.reset();
+      await harness.app.get(REDIS).del('docpilot:budget:provider-exhausted');
+    });
+
+    afterAll(async () => {
+      await harness.app.get(REDIS).del('docpilot:budget:provider-exhausted');
+      await harness.close();
+    });
+
+    it('latches, so later calls degrade instead of failing one by one', async () => {
+      const budget = harness.app.get(BudgetService);
+
+      expect(await budget.allowsModelCall()).toBe(true);
+
+      await budget.markProviderExhausted();
+
+      // Everything downstream already knows what to do with this: answering
+      // falls back to the mock and says so, ingestion refuses at the door.
+      expect(await budget.allowsModelCall()).toBe(false);
+    });
+
+    it('refuses an upload at the door rather than retrying into the same wall', async () => {
+      await harness.app.get(BudgetService).markProviderExhausted();
+
+      await expect(harness.documents.upload(fileFrom('billing.md', DOC))).rejects.toMatchObject({
+        code: 'budget_exhausted',
+      });
+    });
+
+    it('expires, so a top-up is picked up without a restart', async () => {
+      const redis = harness.app.get<Redis>(REDIS);
+
+      await harness.app.get(BudgetService).markProviderExhausted();
+
+      // Set to expire with the spend window rather than kept for ever: a
+      // demo that stayed degraded after being paid for would need somebody to
+      // notice and redeploy.
+      expect(await redis.ttl('docpilot:budget:provider-exhausted')).toBeGreaterThan(0);
     });
   });
 });

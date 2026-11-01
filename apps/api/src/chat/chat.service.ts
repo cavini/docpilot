@@ -6,7 +6,12 @@ import { InvalidRequestError } from '../common/errors/index.js';
 import { BudgetService } from '../budget/index.js';
 import { type Env } from '../config/env.schema.js';
 import { ENV } from '../config/env.tokens.js';
-import { calculateCost, describeProviderFailure, UsageService } from '../llm/index.js';
+import {
+  calculateCost,
+  describeProviderFailure,
+  isCreditExhausted,
+  UsageService,
+} from '../llm/index.js';
 import { type RetrievedChunk, RetrievalService } from '../retrieval/index.js';
 import { CHAT_MODEL_FACTORY, type ChatModelFactory } from './chat.tokens.js';
 import { type Citation, resolveCitations } from './citations.js';
@@ -214,7 +219,7 @@ export class ChatService {
                 'chat stream failed',
               );
 
-              return describeProviderFailure(error);
+              return this.onProviderFailure(error);
             },
           }),
         );
@@ -231,7 +236,7 @@ export class ChatService {
       onError: (error: unknown) => {
         this.logger.error({ err: error }, 'chat stream aborted');
 
-        return describeProviderFailure(error);
+        return this.onProviderFailure(error);
       },
     });
   }
@@ -301,5 +306,27 @@ export class ChatService {
       },
       'chat turn stored',
     );
+  }
+
+  /**
+   * Turns a provider failure into a sentence, and latches an empty balance.
+   *
+   * The latch is what makes "out of credit" degrade rather than just fail.
+   * Without it every later question would be another error, and every upload
+   * a document stuck in `failed` - whereas the graceful path for a spent
+   * budget already exists and this is what connects the two.
+   *
+   * Fire and forget: the reader is waiting on a stream that has already
+   * failed, and holding it open to write a Redis key helps nobody.
+   *
+   * @param error Whatever the SDK threw.
+   * @returns What to show in place of the answer.
+   */
+  private onProviderFailure(error: unknown): string {
+    if (isCreditExhausted(error)) {
+      void this.budget.markProviderExhausted();
+    }
+
+    return describeProviderFailure(error);
   }
 }
