@@ -68,6 +68,28 @@ export class ConflictError extends DomainError {
 }
 
 /**
+ * The caller has made too many requests in the window.
+ *
+ * Carries `retryAfterSeconds` so a client is told when to come back rather
+ * than left to guess, which is the difference between a limit and a wall.
+ */
+export class TooManyRequestsError extends DomainError {
+  override readonly code = 'too_many_requests';
+  override readonly httpStatus = 429;
+
+  /**
+   * @param retryAfterSeconds How long until the window reopens.
+   */
+  constructor(readonly retryAfterSeconds: number) {
+    super(
+      `Too many requests. This is a small demo, so the limits are low. ` +
+        `Try again in ${String(retryAfterSeconds)} seconds.`,
+      { retryAfterSeconds },
+    );
+  }
+}
+
+/**
  * The caller did not present the demo key.
  *
  * Carries no detail about what was supplied - not its value, not its length,

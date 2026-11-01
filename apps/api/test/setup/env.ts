@@ -37,3 +37,8 @@ process.env.LLM_PROVIDER = 'mock';
 
 // Keep the output readable; a failing test says what went wrong itself.
 process.env.LOG_LEVEL = 'silent';
+
+// No request limits by default: they are counted in a shared Redis, so one
+// spec's requests would otherwise be charged against the next one's. The spec
+// that tests them turns them on for itself.
+process.env.RATE_LIMIT_ENABLED = 'false';

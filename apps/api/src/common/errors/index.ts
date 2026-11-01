@@ -7,5 +7,6 @@ export {
   InvalidRequestError,
   NotFoundError,
   PayloadTooLargeError,
+  TooManyRequestsError,
   UnauthorizedError,
 } from './domain-error.js';

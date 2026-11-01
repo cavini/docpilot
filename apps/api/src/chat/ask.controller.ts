@@ -5,9 +5,11 @@ import { type Request } from 'express';
 import { ApiErrors } from '../common/http/api-errors.decorator.js';
 import { AskRequestDto, AskResponseDto } from './ask.dto.js';
 import { AskService } from './ask.service.js';
+import { AnswerRateLimit } from '../rate-limit/index.js';
 
 /** Answering questions from the corpus. */
 @ApiTags('ask')
+@AnswerRateLimit()
 @Controller('ask')
 export class AskController {
   constructor(private readonly ask: AskService) {}
