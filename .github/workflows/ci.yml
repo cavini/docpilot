@@ -88,8 +88,14 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
+      # Playwright lives in the two packages that need it, not at the
+      # workspace root, so `pnpm exec` from the root finds nothing. Both are
+      # installed: apps/web drives the end-to-end suite, packages/ui runs
+      # Storybook's stories in a real browser.
       - name: Install browsers
-        run: pnpm exec playwright install --with-deps chromium
+        run: |
+          pnpm --filter @docpilot/web exec playwright install --with-deps chromium
+          pnpm --filter @docpilot/ui exec playwright install --with-deps chromium
 
       - name: Component tests
         run: pnpm test:component
