@@ -7,6 +7,25 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-01
+
+### Added in M5
+
+- Structured extraction as its own endpoints: `POST /extract` returns validated
+  items with citations, `POST /extract/stream` sends one event per completed
+  item, and `GET /extract/schemas` publishes the shapes the server knows.
+- The schema registry moved to `packages/shared`, so one Zod definition
+  constrains the model, validates every item and lays out the table. Three
+  shapes: `api_endpoints`, `document_outline`, `faq_pairs`.
+- One repair attempt: output that fails validation is sent back **with the
+  validation error**, once. A second failure is a typed error rather than a
+  third attempt. Items that fail are dropped, counted and reported.
+- A table in the interface that fills a row at a time, with the columns taken
+  from the server's schema rather than hard-coded, and a JSON download that
+  carries the shape and the citations with the items.
+- `docs/structured-output.md`; the extraction endpoints in `docs/api.md`; the
+  streaming table in `docs/frontend.md`.
+
 ### Added in M4
 
 - A tool-calling agent (`POST /agent`): the model chooses how to answer, in a
