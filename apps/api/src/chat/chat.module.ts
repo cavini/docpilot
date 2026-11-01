@@ -25,8 +25,8 @@ import { CHAT_MODEL_FACTORY, type ChatModelFactory } from './chat.tokens.js';
       inject: [ENV],
       useFactory:
         (env: Env): ChatModelFactory =>
-        (mockScript) =>
-          createChatModel(env, mockScript),
+        (mockScript, options) =>
+          createChatModel(env, mockScript, options),
     },
   ],
   exports: [AskService, ChatService, ConversationsService, CHAT_MODEL_FACTORY],

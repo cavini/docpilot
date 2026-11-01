@@ -3,6 +3,7 @@ import { type UIMessageChunk, createUIMessageStream, streamText, toUIMessageStre
 import { PinoLogger } from 'nestjs-pino';
 
 import { InvalidRequestError } from '../common/errors/index.js';
+import { BudgetService } from '../budget/index.js';
 import { type Env } from '../config/env.schema.js';
 import { ENV } from '../config/env.tokens.js';
 import { calculateCost, UsageService } from '../llm/index.js';
@@ -59,6 +60,7 @@ export class ChatService {
     private readonly usage: UsageService,
     private readonly logger: PinoLogger,
     @Inject(CHAT_MODEL_FACTORY) private readonly chatModel: ChatModelFactory,
+    private readonly budget: BudgetService,
   ) {
     this.logger.setContext(ChatService.name);
   }
@@ -162,7 +164,21 @@ export class ChatService {
 
         const history = buildHistory(previous);
         const rendered = renderHistory(history);
-        const { model, provider, modelId } = this.chatModel();
+
+        // Announced before any text, so the interface says so above the
+        // answer rather than correcting itself once it has been read.
+        const budget = await this.budget.status();
+
+        if (budget.exhausted) {
+          writer.write({
+            type: STREAM_PARTS.budget,
+            data: { degraded: true, resetsAt: budget.resetsAt?.toISOString() ?? null },
+          });
+        }
+
+        const { model, provider, modelId } = this.chatModel(undefined, {
+          forceMock: budget.exhausted,
+        });
         const startedAt = Date.now();
 
         const result = streamText({

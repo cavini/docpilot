@@ -68,6 +68,66 @@ export class ConflictError extends DomainError {
 }
 
 /**
+ * The caller did not present the demo key.
+ *
+ * Carries no detail about what was supplied - not its value, not its length,
+ * not whether it was close. A message that says "wrong key" and one that says
+ * "key too short" are different amounts of help to someone guessing.
+ */
+export class UnauthorizedError extends DomainError {
+  override readonly code = 'unauthorized';
+  override readonly httpStatus = 401;
+}
+
+/**
+ * The corpus already holds as many documents as it is allowed to.
+ *
+ * 409 rather than 413: the request is not too large, it conflicts with the
+ * current state, and the client can act on it by deleting something.
+ */
+export class CorpusFullError extends DomainError {
+  override readonly code = 'corpus_full';
+  override readonly httpStatus = 409;
+
+  /**
+   * @param limit The configured ceiling, named so the message is actionable.
+   */
+  constructor(limit: number) {
+    super(
+      `The corpus already holds its limit of ${String(limit)} documents. ` +
+        'Delete one before uploading another.',
+      { limit },
+    );
+  }
+}
+
+/**
+ * The day's spend ceiling has been reached and this call would cost money.
+ *
+ * Only ingestion raises this. Answering degrades to the mock instead, because
+ * a canned answer is disposable - whereas a document embedded by the mock
+ * would sit in the corpus returning confident nonsense for every future
+ * search, with nothing in the interface ever saying so.
+ *
+ * 503 rather than 402: nothing is for sale, and the condition clears on its
+ * own at midnight, which is what `Retry-After` is for.
+ */
+export class BudgetExhaustedError extends DomainError {
+  override readonly code = 'budget_exhausted';
+  override readonly httpStatus = 503;
+
+  /**
+   * @param resetsAt When the ceiling lifts, if it is known.
+   */
+  constructor(resetsAt: Date | null) {
+    super(
+      "The demo's budget for today is spent, so nothing new can be " + 'processed until it resets.',
+      resetsAt === null ? {} : { resetsAt: resetsAt.toISOString() },
+    );
+  }
+}
+
+/**
  * A system the API depends on is unreachable or failing.
  *
  * Mapped to 503 rather than 500 because the request may well succeed on a

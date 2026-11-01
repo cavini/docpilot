@@ -1,10 +1,16 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Inject, Injectable } from '@nestjs/common';
 import { type Queue } from 'bullmq';
-import { and, desc, eq, lt } from 'drizzle-orm';
+import { and, count, desc, eq, lt } from 'drizzle-orm';
 import { PinoLogger } from 'nestjs-pino';
 
-import { ConflictError, NotFoundError } from '../common/errors/index.js';
+import { BudgetService } from '../budget/index.js';
+import {
+  BudgetExhaustedError,
+  ConflictError,
+  CorpusFullError,
+  NotFoundError,
+} from '../common/errors/index.js';
 import { type Env } from '../config/env.schema.js';
 import { ENV } from '../config/env.tokens.js';
 import { type Database } from '../db/database.type.js';
@@ -43,6 +49,7 @@ export class DocumentsService {
     private readonly storage: StorageService,
     @InjectQueue(INGESTION_QUEUE) private readonly queue: Queue<IngestionJobData>,
     private readonly logger: PinoLogger,
+    private readonly budget: BudgetService,
   ) {
     this.logger.setContext(DocumentsService.name);
   }
@@ -64,6 +71,9 @@ export class DocumentsService {
    *
    * @param file The uploaded file.
    * @returns The document, and whether it was deduplicated.
+   * @throws {CorpusFullError} If the corpus already holds `MAX_DOCUMENTS`.
+   * @throws {BudgetExhaustedError} If the day's spend ceiling is reached and
+   *   this upload would need embedding.
    */
   async upload(file: UploadedFile): Promise<UploadResult> {
     const upload = validateUpload(file, this.env.MAX_UPLOAD_MB);
@@ -73,15 +83,24 @@ export class DocumentsService {
     });
 
     if (existing && existing.status !== 'failed') {
+      // Already ingested. Nothing will be embedded and no row will be added,
+      // so neither ceiling applies - the caller gets what is already there.
       this.logger.info({ documentId: existing.id }, 'upload deduplicated');
       return { document: existing, deduplicated: true };
     }
 
     if (existing) {
-      // Same bytes, previously failed: reuse the row and try again.
+      // Same bytes, previously failed: reuse the row and try again. The row
+      // already exists so the corpus cannot grow, but the retry re-embeds,
+      // which costs.
+      await this.assertWithinBudget();
+
       const retried = await this.enqueue(existing.id);
       return { document: retried, deduplicated: false };
     }
+
+    await this.assertCorpusHasRoom();
+    await this.assertWithinBudget();
 
     const [created] = await this.db
       .insert(documents)
@@ -234,5 +253,45 @@ export class DocumentsService {
     }
 
     return reset;
+  }
+
+  /**
+   * Refuses when the corpus is already at its configured size.
+   *
+   * `MAX_UPLOAD_MB` covers one enormous file; this covers a thousand small
+   * ones, which costs the same in embeddings and storage and is the easier of
+   * the two to do by accident.
+   *
+   * @throws {CorpusFullError} If the ceiling is set and has been reached.
+   */
+  private async assertCorpusHasRoom(): Promise<void> {
+    if (this.env.MAX_DOCUMENTS <= 0) {
+      return;
+    }
+
+    const [row] = await this.db.select({ held: count() }).from(documents);
+
+    if ((row?.held ?? 0) >= this.env.MAX_DOCUMENTS) {
+      throw new CorpusFullError(this.env.MAX_DOCUMENTS);
+    }
+  }
+
+  /**
+   * Refuses when the day's spend ceiling has been reached.
+   *
+   * Ingestion refuses where answering degrades. A document embedded by the
+   * mock would sit in the corpus returning confident nonsense for every
+   * future search, and nothing in the interface would ever say so - degraded
+   * output is disposable, degraded stored state is not.
+   *
+   * @throws {BudgetExhaustedError} If the ceiling has been reached.
+   */
+  private async assertWithinBudget(): Promise<void> {
+    const status = await this.budget.status();
+
+    if (status.exhausted) {
+      this.logger.warn({ spentUsd: status.spentUsd }, 'upload refused: budget spent');
+      throw new BudgetExhaustedError(status.resetsAt);
+    }
   }
 }

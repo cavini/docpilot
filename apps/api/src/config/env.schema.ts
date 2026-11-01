@@ -106,6 +106,18 @@ export const envSchema = z
     // Ingestion limits.
     MAX_UPLOAD_MB: integerFromString(20),
 
+    /**
+     * How many documents the corpus may hold.
+     *
+     * One enormous file is covered by `MAX_UPLOAD_MB`; this covers a thousand
+     * small ones, which costs the same in embeddings and storage and is the
+     * easier of the two to do by accident.
+     *
+     * Zero means no limit, which is the right default for a local corpus I
+     * control and the wrong one for a public URL.
+     */
+    MAX_DOCUMENTS: integerFromString(0),
+
     // Feature flags. These are defaults; rows in `feature_flags` override them.
     FF_RERANK: booleanFromString(false),
     FF_GRAPHQL: booleanFromString(true),
@@ -114,6 +126,21 @@ export const envSchema = z
 
     // Demo protection. Empty means the API is open, which is the local default.
     DEMO_API_KEY: z.string().default(''),
+
+    /**
+     * A ceiling on what a UTC day of model calls may cost, in US dollars.
+     *
+     * The measure that actually protects a hosted demo's provider balance. A
+     * request-count limit does not: one agent turn can be six model calls and
+     * a cached search can be none, so a limit counted in requests has no
+     * dollars in it.
+     *
+     * Read from `llm_usage`, which already records the cost of every call.
+     *
+     * Zero means no ceiling. That is the local default, where every call goes
+     * to the mock provider and costs nothing.
+     */
+    DAILY_BUDGET_USD: z.coerce.number().nonnegative().default(0),
 
     // Tracing. Off unless an agent is actually available.
     DD_TRACE_ENABLED: booleanFromString(false),

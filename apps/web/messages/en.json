@@ -151,5 +151,16 @@
       "question": "Question",
       "answer": "Answer"
     }
+  },
+  "access": {
+    "heading": "This demo needs a key",
+    "intro": "DocPilot answers from uploaded documents using a real language model, and every question costs me money. The key keeps crawlers out.",
+    "label": "Demo key",
+    "submit": "Unlock",
+    "checking": "Checking…",
+    "rejected": "That key was not accepted. Check it and try again.",
+    "note": "The key is kept for this tab only and is forgotten when you close it.",
+    "budgetSpent": "Today's budget is spent, so answers below come from a stub rather than a model. Retrieval and citations are real.",
+    "budgetSpentUntil": "Today's budget is spent, so answers below come from a stub rather than a model. Retrieval and citations are real. It resets at {resetsAt, time, short} UTC."
   }
 }

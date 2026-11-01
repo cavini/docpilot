@@ -151,5 +151,16 @@
       "question": "Pergunta",
       "answer": "Resposta"
     }
+  },
+  "access": {
+    "heading": "Esta demonstração precisa de uma chave",
+    "intro": "O DocPilot responde a partir dos documentos enviados usando um modelo de linguagem real, e cada pergunta me custa dinheiro. A chave mantém os rastreadores de fora.",
+    "label": "Chave da demonstração",
+    "submit": "Desbloquear",
+    "checking": "Verificando…",
+    "rejected": "Essa chave não foi aceita. Confira e tente de novo.",
+    "note": "A chave fica guardada apenas nesta aba e é esquecida quando você a fecha.",
+    "budgetSpent": "O orçamento de hoje acabou, então as respostas abaixo vêm de um substituto, não de um modelo. A busca e as citações são reais.",
+    "budgetSpentUntil": "O orçamento de hoje acabou, então as respostas abaixo vêm de um substituto, não de um modelo. A busca e as citações são reais. Ele reinicia às {resetsAt, time, short} UTC."
   }
 }

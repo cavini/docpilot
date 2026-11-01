@@ -1,6 +1,7 @@
 import { type HealthResponse } from '@docpilot/shared';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
+import { demoKeyHeaders } from '../features/access/demo-key';
 import { type DocumentPage, type DocumentSummary } from '../features/documents/document.types';
 
 /** Base URL of the Nest API. The web app never talks to anything else. */
@@ -20,7 +21,19 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
  */
 export const docpilotApi = createApi({
   reducerPath: 'docpilotApi',
-  baseQuery: fetchBaseQuery({ baseUrl: API_URL }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: API_URL,
+    // Read per request rather than captured once: the key arrives after the
+    // store is created, and a client built around a key it did not have yet
+    // would send none for the rest of the session.
+    prepareHeaders: (headers) => {
+      for (const [name, value] of Object.entries(demoKeyHeaders())) {
+        headers.set(name, value);
+      }
+
+      return headers;
+    },
+  }),
   tagTypes: ['Health', 'Document'],
   endpoints: (build) => ({
     // eslint-disable-next-line @typescript-eslint/no-invalid-void-type -- RTK Query uses `void` to mean the query takes no argument

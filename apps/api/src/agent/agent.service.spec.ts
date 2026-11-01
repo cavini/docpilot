@@ -1,4 +1,9 @@
-import { createScriptedLanguageModel } from '@docpilot/testing';
+import {
+  budgetAllowing,
+  budgetExhausted,
+  type BudgetLike,
+  createScriptedLanguageModel,
+} from '@docpilot/testing';
 import { type UIMessageChunk } from 'ai';
 
 import { type ConversationsService } from '../chat/conversations.service.js';
@@ -8,6 +13,7 @@ import { type ConversationRow } from '../db/schema/index.js';
 import { type FeatureFlagsService } from '../feature-flags/feature-flags.service.js';
 import { type UsageService } from '../llm/index.js';
 import { type RetrievalService, type ScoredChunk } from '../retrieval/index.js';
+import { STREAM_PARTS } from '../chat/stream-parts.js';
 import { STEP_LIMIT_NOTICE } from './agent.prompt.js';
 import { AgentService } from './agent.service.js';
 
@@ -43,10 +49,12 @@ const chunk = (n: number): ScoredChunk => ({
 /** Builds the service with every dependency substituted. */
 function createService(
   options: {
+    budget?: BudgetLike;
     script?: Parameters<typeof createScriptedLanguageModel>[0];
     toolsEnabled?: boolean;
   } = {},
 ) {
+  const budget = options.budget ?? budgetAllowing();
   const search = jest.fn().mockResolvedValue({ results: [chunk(1)], tookMs: 5, cached: false });
   const retrieval = { search } as unknown as RetrievalService;
 
@@ -77,6 +85,7 @@ function createService(
       flags,
       logger as never,
       chatModel,
+      budget as never,
     ),
     search,
     appendTurn,
@@ -232,5 +241,40 @@ describe('AgentService', () => {
     const { service } = createService();
 
     await expect(service.stream({ question: 'x'.repeat(2_000) })).rejects.toThrow(/limit/i);
+  });
+
+  describe("when the day's spend ceiling has been reached", () => {
+    it('AC11: announces it before any text and runs the turn on the mock', async () => {
+      const { service } = createService({ budget: budgetExhausted() });
+
+      const parts = await drain(await service.stream({ question: 'Open a ticket' }));
+      const budgetAt = parts.findIndex((part) => part.type === STREAM_PARTS.budget);
+
+      expect(budgetAt).toBeGreaterThanOrEqual(0);
+      expect(parts[budgetAt]).toMatchObject({
+        data: { degraded: true, resetsAt: '2026-11-02T00:00:00.000Z' },
+      });
+    });
+
+    it('AC11: records the turn against the mock, so the ledger does not drift', async () => {
+      const { service, record } = createService({ budget: budgetExhausted() });
+
+      await drain(await service.stream({ question: 'anything' }));
+
+      // The ceiling is read from this ledger. A degraded turn recorded
+      // against the configured provider would inflate the number that
+      // decides whether the next turn is degraded too.
+      expect(record).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: 'mock', model: 'mock-chat' }),
+      );
+    });
+
+    it('AC10: sends no budget part when a real provider ran the turn', async () => {
+      const { service } = createService();
+
+      const parts = await drain(await service.stream({ question: 'anything' }));
+
+      expect(parts.some((part) => part.type === STREAM_PARTS.budget)).toBe(false);
+    });
   });
 });

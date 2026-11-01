@@ -115,4 +115,11 @@ export class ExtractionResponseDto {
 
   @ApiProperty({ type: ExtractionUsageDto })
   usage: ExtractionUsageDto;
+
+  /**
+   * True when the day's spend ceiling was reached and the mock produced
+   * these rows.
+   */
+  @ApiProperty({ example: false })
+  degraded: boolean;
 }

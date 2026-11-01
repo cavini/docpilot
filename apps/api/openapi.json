@@ -1,6 +1,31 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/access": {
+      "get": {
+        "operationId": "AccessController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The key is missing or wrong"
+          }
+        },
+        "summary": "Check the demo key and read the demo state",
+        "tags": [
+          "access"
+        ]
+      }
+    },
     "/feature-flags": {
       "get": {
         "operationId": "FeatureFlagsController_list",
@@ -807,6 +832,49 @@
       }
     },
     "schemas": {
+      "AccessBudgetDto": {
+        "type": "object",
+        "properties": {
+          "spent": {
+            "type": "boolean",
+            "description": "Whether the day's ceiling has been reached.\n\nTrue means answers come from the mock until it resets. It does not mean\nthe key was rejected - those are different problems, and conflating them\nwould have a reader rotating a key that works fine.",
+            "example": false
+          },
+          "resetsAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When the ceiling lifts. Null when no ceiling is configured.",
+            "example": "2026-11-02T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "spent",
+          "resetsAt"
+        ]
+      },
+      "AccessResponseDto": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "description": "Always true: a wrong key never reaches the handler.",
+            "example": true
+          },
+          "keyRequired": {
+            "type": "boolean",
+            "description": "Whether a key is required at all.\n\nFalse locally, where the API is open. A client can use this to skip the\nunlock form rather than showing one that accepts anything.",
+            "example": true
+          },
+          "budget": {
+            "$ref": "#/components/schemas/AccessBudgetDto"
+          }
+        },
+        "required": [
+          "ok",
+          "keyRequired",
+          "budget"
+        ]
+      },
       "DependencyHealthResponse": {
         "type": "object",
         "properties": {
@@ -1094,12 +1162,18 @@
           },
           "usage": {
             "$ref": "#/components/schemas/AnswerUsageDto"
+          },
+          "degraded": {
+            "type": "boolean",
+            "description": "True when the day's spend ceiling was reached and the mock answered.\n\nReported rather than hidden: a reader comparing a canned answer against\nthe documents deserves to know which one they are reading.",
+            "example": false
           }
         },
         "required": [
           "answer",
           "citations",
-          "usage"
+          "usage",
+          "degraded"
         ]
       },
       "ConversationSummaryDto": {
@@ -1540,6 +1614,11 @@
           },
           "usage": {
             "$ref": "#/components/schemas/ExtractionUsageDto"
+          },
+          "degraded": {
+            "type": "boolean",
+            "description": "True when the day's spend ceiling was reached and the mock produced\nthese rows.",
+            "example": false
           }
         },
         "required": [
@@ -1548,7 +1627,8 @@
           "citations",
           "dropped",
           "repaired",
-          "usage"
+          "usage",
+          "degraded"
         ]
       },
       "DocumentResponseDto": {
