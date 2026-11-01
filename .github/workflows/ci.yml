@@ -1,134 +1,155 @@
 name: CI
 
 on:
-  pull_request:
   push:
     branches: [main]
+  pull_request:
 
-# A new push to the same branch makes the previous run's result irrelevant.
+# A second push to the same branch makes the first run's answer worthless.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  # Nothing in CI connects to these. They exist because configuration is
-  # validated at startup, and the OpenAPI export has to build the application
-  # graph in order to read its routes.
-  DATABASE_URL: postgres://docpilot:docpilot@localhost:5432/docpilot
-  REDIS_URL: redis://localhost:6379
-  # Deterministic, free, and no key required. CI never needs a secret.
+  # Every suite runs against the mock provider, so CI needs no API key and
+  # cannot spend anything. That is a property worth keeping: a test suite that
+  # needs a secret is a test suite contributors cannot run.
   LLM_PROVIDER: mock
-  TURBO_TELEMETRY_DISABLED: 1
-  NEXT_TELEMETRY_DISABLED: 1
-  DO_NOT_TRACK: 1
 
 jobs:
-  static:
-    name: Format, lint, types and contract
+  # Fast feedback. Nothing here needs Docker, so it answers in a minute while
+  # the heavier job is still pulling images.
+  check:
+    name: Lint, types, unit tests
     runs-on: ubuntu-latest
+    # A hung step would otherwise occupy a runner for six hours.
     timeout-minutes: 15
+
+    services:
+      # Only the OpenAPI check needs this. It builds the real application
+      # graph, and the queue module connects eagerly and retries for ever, so
+      # without a Redis the step hangs rather than failing. Postgres is not
+      # needed: the pool connects on first query and the export makes none.
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
 
-      - run: pnpm format:check
-      - run: pnpm lint
-      - run: pnpm typecheck
+      - uses: pnpm/action-setup@v4
 
-      # Regenerating the spec and diffing turns an undocumented endpoint or a
-      # changed response shape into a build failure, rather than something a
-      # generated client discovers later.
-      - name: OpenAPI spec is up to date
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      # Generated from the code, so a drifted file means someone changed a
+      # contract without regenerating it.
+      - name: OpenAPI is up to date
+        env:
+          # The export builds the application graph, so the schema's required
+          # variables have to be present. Nothing connects - Redis is lazy and
+          # the pool is never used - so placeholders are enough.
+          DATABASE_URL: postgres://docpilot:docpilot@localhost:5432/docpilot
+          REDIS_URL: redis://localhost:6379
         run: |
           pnpm openapi:export
-          git diff --exit-code -- apps/api/openapi.json \
-            || { echo '::error::openapi.json is stale. Run `pnpm openapi:export` and commit the result.'; exit 1; }
+          git diff --exit-code apps/api/openapi.json \
+            || { echo "::error::openapi.json is stale. Run pnpm openapi:export and commit it."; exit 1; }
 
-  unit:
-    name: Unit tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
-
-      - run: pnpm test:coverage
-
-      - name: Upload coverage
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: '**/coverage/**'
-          retention-days: 7
-          if-no-files-found: ignore
-
-  backend:
-    name: Integration, API end-to-end and contract
+  # Everything that needs real Postgres, Redis and S3. Testcontainers starts
+  # them, so there is nothing to configure here.
+  integration:
+    name: Integration, API e2e, contract
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
 
-      # Testcontainers starts Postgres, Redis and S3 itself rather than this
-      # job declaring service containers, so the same command runs here and on
-      # a developer's machine. See docs/testing.md.
-      - run: pnpm test:integration
-      - run: pnpm test:api-e2e
-      - run: pnpm test:contract
+      - name: Integration tests
+        run: pnpm test:integration
 
-  component:
-    name: Component tests
+      - name: API end-to-end tests
+        run: pnpm test:api-e2e
+
+      - name: Contract tests
+        run: pnpm test:contract
+
+  browser:
+    name: Component, Storybook, browser e2e
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
 
-      - name: Install Chromium
-        run: pnpm --filter @docpilot/ui exec playwright install --with-deps chromium
+      # Playwright lives in the two packages that need it, not at the
+      # workspace root, so `pnpm exec` from the root finds nothing. Both are
+      # installed: apps/web drives the end-to-end suite, packages/ui runs
+      # Storybook's stories in a real browser.
+      - name: Install browsers
+        run: |
+          pnpm --filter @docpilot/web exec playwright install --with-deps chromium
+          pnpm --filter @docpilot/ui exec playwright install --with-deps chromium
 
-      # Every story's play function, plus an accessibility check on each story.
-      - run: pnpm test:storybook
-
-      - name: Cypress component tests
+      - name: Component tests
         run: pnpm test:component
 
-      - name: Storybook builds
-        run: pnpm --filter @docpilot/ui build:storybook
+      - name: Storybook tests
+        run: pnpm test:storybook
 
-  e2e:
-    name: Browser end-to-end
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
+      - name: Browser end-to-end tests
+        run: pnpm test:e2e
 
-      - name: Install Chromium
-        run: pnpm --filter @docpilot/web exec playwright install --with-deps chromium
-
-      # The API is stubbed at the network layer, so this needs no database and
-      # no key. Journeys that need the backend will start it with the mock
-      # model.
-      - run: pnpm test:e2e
-
-      - name: Upload Playwright report
+      - uses: actions/upload-artifact@v4
         if: failure()
-        uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: apps/web/playwright-report
           retention-days: 7
-          if-no-files-found: ignore
 
-  build:
-    name: Build
+  # Builds the image CI would deploy. Catches a Dockerfile that drifts from
+  # the workspace, which no test suite would notice.
+  image:
+    name: API image builds
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup
-
-      - run: pnpm build
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -20,7 +20,19 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+
+    /*
+     * Incremental builds, with the build info kept next to the output rather
+     * than at the package root.
+     *
+     * The default puts `.tsbuildinfo` beside the tsconfig, where deleting
+     * `dist` leaves it behind - and the next build reads it, decides nothing
+     * has changed, and emits nothing. A silent no-op that produces a package
+     * with no `dist` and exit code 0, which then fails in whatever imports
+     * it. Keeping the two together means they can only be deleted as a pair.
+     */
     "incremental": true,
+    "tsBuildInfoFile": "${configDir}/dist/.tsbuildinfo",
     "pretty": true
   }
 }
