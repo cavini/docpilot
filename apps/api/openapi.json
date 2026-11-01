@@ -775,7 +775,7 @@
   "info": {
     "title": "DocPilot API",
     "description": "Answers questions about uploaded documents with citations back to the\nexact source chunk, and acts on them through tools.\n\nResponses that fail carry the shape `{ error: { code, message, requestId } }`.\nBranch on `code`, which is stable, rather than on `message`.",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "contact": {},
     "license": {
       "name": "MIT",
@@ -870,7 +870,7 @@
           "version": {
             "type": "string",
             "description": "Application version.",
-            "example": "0.1.0"
+            "example": "0.2.0"
           },
           "uptimeSeconds": {
             "type": "number",
