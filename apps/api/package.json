@@ -22,7 +22,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "seed": "nest build && node dist/scripts/seed.js",
-    "record-embeddings": "nest build && node dist/scripts/record-embeddings.js"
+    "record-embeddings": "nest build && node dist/scripts/record-embeddings.js",
+    "db:migrate:run": "node dist/scripts/migrate.js"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.93",

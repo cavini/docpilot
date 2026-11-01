@@ -32,4 +32,10 @@ export default tseslint.config(
   },
   testFileOverrides,
   untypedFileOverrides,
+  {
+    // A tool's config file at the repository root, read by the Neon CLI
+    // rather than by any tsconfig. Same treatment as the other root configs.
+    files: ['neon.ts'],
+    extends: untypedFileOverrides,
+  },
 );

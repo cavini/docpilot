@@ -7,6 +7,34 @@ this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added — getting it deployable
+
+- A Dockerfile for the API that understands the workspace: manifests-only
+  dependency layer for caching, native rebuild where the source actually is,
+  pnpm pinned to the version that wrote the lockfile, and a runtime stage that
+  is the pruned workspace and a non-root user.
+- A production migration runner built on `drizzle-orm` rather than
+  `drizzle-kit`, which is a development dependency and is pruned out of the
+  image. It prefers an unpooled connection where one is published, because a
+  pooler can hand successive statements to different backends and a migration
+  cannot survive that.
+- `render.yaml` for the API, in the same region as the database — retrieval
+  makes several round trips per answer, so a cross-country hop is latency paid
+  on every one.
+- Managed Postgres with pgvector, migrated and seeded: four documents, 27
+  chunks, embeddings and both indexes, with the HNSW index confirmed in the
+  query plan rather than assumed.
+
+### Fixed
+
+- Environment files were read least-specific first, with a comment claiming the
+  opposite. `process.loadEnvFile` does not overwrite a value that is already
+  set, so the first file wins — meaning an app-local file could never override
+  the root one. The test alongside it asserted only which files were found and
+  said precedence was unobservable inside Jest; it is observable from a child
+  process, and five tests now fail against the old order. `.env.local` is added
+  above `.env`, so a value a tool rewrites can be overridden locally.
+
 ### Added — guarding a public demo
 
 M7's guardrails, brought forward because the deploy is imminent and a guardrail

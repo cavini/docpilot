@@ -2,13 +2,21 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
- * Files searched for local configuration, in order of increasing precedence.
+ * Files searched for local configuration, **most specific first**.
  *
- * The repository keeps one `.env` at its root so the API and the web app are
- * configured in one place; an app-local file is read afterwards so a developer
- * can override a single value without editing the shared one.
+ * Order matters and not in the direction it looks. `process.loadEnvFile` does
+ * not overwrite a variable that is already set, so the **first** file to
+ * define a value is the one that wins. An earlier version of this list had
+ * the root file first and a comment claiming the app-local one could override
+ * it; the opposite was true, and the test alongside it only asserted which
+ * files were found, so nothing caught it.
+ *
+ * `.env.local` exists for values a developer wants to keep that a tool might
+ * rewrite. `neon env pull` overwrites `DATABASE_URL` in `.env` every time it
+ * runs, and without somewhere of higher precedence to put it, local
+ * development would silently start talking to the production database.
  */
-export const ENV_FILES = ['../../.env', '.env'] as const;
+export const ENV_FILES = ['.env.local', '.env', '../../.env.local', '../../.env'] as const;
 
 /**
  * Loads `.env` into the environment, if one exists.
@@ -17,6 +25,9 @@ export const ENV_FILES = ['../../.env', '.env'] as const;
  * in the real environment wins over the file. That is the behaviour this
  * needs. In CI and in production the platform supplies the configuration, and
  * a stale file left in an image must not be able to override it.
+ *
+ * The same rule is what orders {@link ENV_FILES}: because nothing already set
+ * is overwritten, the first file to define a value wins.
  *
  * A missing file is not an error. A container image ships without one, and
  * requiring it would make the application refuse to start in exactly the
@@ -28,12 +39,12 @@ export const ENV_FILES = ['../../.env', '.env'] as const;
  * @param baseDir Directory the paths resolve against. Defaults to the working
  *   directory, which for every script in this workspace is the app's own
  *   directory.
- * @returns The files that were found and loaded, in the order applied. Useful
- *   for diagnosing which configuration a process actually picked up.
+ * @returns The files that were found and loaded, highest precedence first.
+ *   Useful for diagnosing which configuration a process actually picked up.
  *
  * @example
  * ```ts
- * loadDotenv(); // ['/repo/.env']
+ * loadDotenv(); // ['/repo/apps/api/.env', '/repo/.env']
  * ```
  */
 export function loadDotenv(baseDir: string = process.cwd()): string[] {
