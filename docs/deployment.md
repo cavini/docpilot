@@ -45,6 +45,20 @@ one shared key, so two people on one office network share a budget and one
 person with a phone has two. It bounds blast radius. Real per-person limits need
 per-person credentials.
 
+### Vercel
+
+Root Directory is `apps/web`, and `vercel.json` lives **there**, not at the
+repository root. Every path in it is relative to that directory, so an
+`outputDirectory` of `apps/web/.next` resolves to `apps/web/apps/web/.next` and
+the deploy fails with `NEXT_OUTPUT_DIR_MISSING`. The file omits
+`outputDirectory` entirely and lets the framework detection find `.next` on its
+own.
+
+The build command still builds `@docpilot/shared` first. `pnpm --filter` works
+from anywhere inside the workspace, so running it from `apps/web` is fine, and
+"Include files outside the Root Directory" has to stay on or the workspace is
+not there to filter.
+
 ### Choosing a model
 
 The provider's own per-minute limits matter as much as the price here, because
