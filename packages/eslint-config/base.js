@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 /**
@@ -122,6 +123,11 @@ export const testFileOverrides = tseslint.config({
  * Turns off type-aware rules for files no tsconfig includes: plain JavaScript,
  * and the config files that live at a workspace root.
  *
+ * These all run under Node — build configs, test runner configs and scripts —
+ * so they get Node's globals. Without them `process` and `Buffer` read as
+ * undefined variables, and the only way to quiet that is a disable comment on
+ * every line that uses one.
+ *
  * Flat config applies layers in order, so this **must be the last layer** in
  * the final config. Any scoped layer placed after it can re-enable a
  * type-aware rule for a file the project service cannot type, which makes
@@ -132,6 +138,7 @@ export const testFileOverrides = tseslint.config({
 export const untypedFileOverrides = tseslint.config({
   files: ['**/*.{js,mjs,cjs}', '**/*.config.{ts,mts,cts}'],
   extends: [tseslint.configs.disableTypeChecked],
+  languageOptions: { globals: { ...globals.node } },
 });
 
 export default baseConfig;
