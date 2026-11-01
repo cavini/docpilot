@@ -118,5 +118,38 @@
       "labels": "Etiquetas",
       "unreadable": "O assistente propôs algo que não é um chamado. Recuse."
     }
+  },
+  "extraction": {
+    "heading": "Extrair",
+    "intro": "Retire dados estruturados dos documentos, usando um formato que este servidor conhece.",
+    "schemaLabel": "Formato",
+    "run": "Extrair",
+    "stop": "Parar",
+    "download": "Baixar JSON",
+    "waiting": "Extraindo…",
+    "dropped": "{count, plural, one {# item descartado} other {# itens descartados}}",
+    "schemasUnavailable": "Não foi possível carregar a lista de formatos.",
+    "readFrom": "{count, plural, one {Lido de # trecho} other {Lido de # trechos}} em {documents}.",
+    "tableCaption": "{count, plural, one {# item extraído} other {# itens extraídos}}",
+    "empty": {
+      "title": "Nada extraído ainda",
+      "description": "Escolha um formato e clique em Extrair. As linhas aparecem conforme são encontradas."
+    },
+    "schema": {
+      "api_endpoints": "Endpoints da API",
+      "document_outline": "Estrutura do documento",
+      "faq_pairs": "Perguntas e respostas"
+    },
+    "field": {
+      "method": "Método",
+      "path": "Caminho",
+      "summary": "Resumo",
+      "authenticated": "Auth",
+      "level": "Nível",
+      "heading": "Título",
+      "gist": "Cobre",
+      "question": "Pergunta",
+      "answer": "Resposta"
+    }
   }
 }
