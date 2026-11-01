@@ -403,6 +403,132 @@
         ]
       }
     },
+    "/extract/schemas": {
+      "get": {
+        "operationId": "ExtractionController_schemas",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaListDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List the schemas this server can extract",
+        "tags": [
+          "extraction"
+        ]
+      }
+    },
+    "/extract": {
+      "post": {
+        "operationId": "ExtractionController_extract",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractionResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A dependency is unavailable. Retrying is reasonable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Extract structured data using a named schema",
+        "tags": [
+          "extraction"
+        ]
+      }
+    },
+    "/extract/stream": {
+      "post": {
+        "operationId": "ExtractionController_extractStream",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server-sent events: one `schema` event, then an `item` event per extracted item, then `done` — or `error` if it ended early.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Understood but not acceptable. `code` says which part; retrying unchanged will fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A dependency is unavailable. Retrying is reasonable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Extract structured data, one item at a time",
+        "tags": [
+          "extraction"
+        ]
+      }
+    },
     "/documents": {
       "post": {
         "operationId": "DocumentsController_upload",
@@ -1219,6 +1345,210 @@
           "results",
           "tookMs",
           "cached"
+        ]
+      },
+      "SchemaFieldDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "string",
+              "text",
+              "enum",
+              "boolean",
+              "number"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "description": "Column heading, in English. Clients translate by `name`."
+          },
+          "options": {
+            "description": "Allowed values, for an enum.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "label"
+        ]
+      },
+      "SchemaSummaryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "api_endpoints",
+              "document_outline",
+              "faq_pairs"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "fields": {
+            "description": "What a table of this shape renders.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchemaFieldDto"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "description",
+          "fields"
+        ]
+      },
+      "SchemaListDto": {
+        "type": "object",
+        "properties": {
+          "schemas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchemaSummaryDto"
+            }
+          }
+        },
+        "required": [
+          "schemas"
+        ]
+      },
+      "ExtractRequestDto": {
+        "type": "object",
+        "properties": {
+          "schema": {
+            "type": "string",
+            "description": "Name of a schema the server knows.",
+            "minLength": 1,
+            "enum": [
+              "api_endpoints",
+              "document_outline",
+              "faq_pairs"
+            ],
+            "example": "api_endpoints"
+          },
+          "documentId": {
+            "type": "string",
+            "description": "Restrict extraction to one document. Omit to read the whole corpus.",
+            "format": "uuid"
+          },
+          "query": {
+            "type": "string",
+            "description": "What to look for. Omit to use the schema's own default.",
+            "maxLength": 200,
+            "example": "authentication endpoints"
+          }
+        },
+        "required": [
+          "schema"
+        ]
+      },
+      "ExtractionCitationDto": {
+        "type": "object",
+        "properties": {
+          "n": {
+            "type": "number"
+          },
+          "chunkId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentTitle": {
+            "type": "string"
+          },
+          "headingPath": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "n",
+          "chunkId",
+          "documentId",
+          "documentTitle"
+        ]
+      },
+      "ExtractionUsageDto": {
+        "type": "object",
+        "properties": {
+          "inputTokens": {
+            "type": "number"
+          },
+          "outputTokens": {
+            "type": "number"
+          },
+          "costUsd": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "inputTokens",
+          "outputTokens",
+          "costUsd"
+        ]
+      },
+      "ExtractionResponseDto": {
+        "type": "object",
+        "properties": {
+          "schema": {
+            "type": "string",
+            "enum": [
+              "api_endpoints",
+              "document_outline",
+              "faq_pairs"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "description": "Items validated against the named schema."
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExtractionCitationDto"
+            }
+          },
+          "dropped": {
+            "type": "number",
+            "description": "Items the model produced that failed validation and were dropped."
+          },
+          "repaired": {
+            "type": "boolean",
+            "description": "Whether the first attempt failed validation and had to be repaired."
+          },
+          "usage": {
+            "$ref": "#/components/schemas/ExtractionUsageDto"
+          }
+        },
+        "required": [
+          "schema",
+          "items",
+          "citations",
+          "dropped",
+          "repaired",
+          "usage"
         ]
       },
       "DocumentResponseDto": {

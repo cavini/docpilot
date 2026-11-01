@@ -10,6 +10,7 @@ import { DocumentsModule } from './documents/documents.module.js';
 import { DbModule } from './db/db.module.js';
 import { type Env } from './config/env.schema.js';
 import { ENV } from './config/env.tokens.js';
+import { ExtractionModule } from './extraction/extraction.module.js';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module.js';
 import { HealthModule } from './health/health.module.js';
 import { IngestionModule } from './ingestion/ingestion.module.js';
@@ -47,6 +48,7 @@ import { StorageModule } from './storage/storage.module.js';
     HealthModule,
     LlmModule,
     AgentModule,
+    ExtractionModule,
     IngestionModule,
     DocumentsModule,
     RetrievalModule,

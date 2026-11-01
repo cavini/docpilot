@@ -93,6 +93,56 @@ export const CANNED_MOCK_AGENT_SCRIPT: ScriptedResponse[] = [
   },
 ];
 
+/**
+ * One obviously-canned item per schema, so `POST /extract` works with no key.
+ *
+ * Every row says, in its own text, that it came from the mock. That matters
+ * more here than anywhere else: a canned *answer* that reads as canned is
+ * harmless, but canned *extracted data* presented as extracted is exactly the
+ * fabrication this product exists to prevent. So the fabrication announces
+ * itself.
+ *
+ * The retrieval, the validation, the deduplication, the streaming and the
+ * table are all real; only the items are stubs.
+ */
+const CANNED_MOCK_ITEMS: Record<string, unknown[]> = {
+  api_endpoints: [
+    {
+      method: 'GET',
+      path: '/this-row-is-from-the-mock-provider',
+      summary: 'LLM_PROVIDER is "mock", so nothing was really extracted. Set a real provider.',
+      authenticated: false,
+    },
+  ],
+  document_outline: [
+    {
+      level: 1,
+      heading: 'This row is from the mock provider',
+      gist: 'LLM_PROVIDER is "mock", so nothing was really extracted. Set a real provider.',
+    },
+  ],
+  faq_pairs: [
+    {
+      question: 'Why does this table have one odd-looking row?',
+      answer:
+        'Because LLM_PROVIDER is "mock". Retrieval and validation are real; the row is a stub.',
+    },
+  ],
+};
+
+/**
+ * What the mock provider returns for an extraction.
+ *
+ * `Output.array` reads the model's text and parses it, so the script answers
+ * with the JSON a constrained provider would have produced.
+ *
+ * @param schema Which schema is being extracted.
+ * @returns A script the mock model can follow.
+ */
+export function cannedMockExtraction(schema: string): ScriptedResponse[] {
+  return [{ text: JSON.stringify({ elements: CANNED_MOCK_ITEMS[schema] ?? [] }) }];
+}
+
 /** A chat model, with the provider and id needed to price its usage. */
 export interface ResolvedChatModel {
   model: LanguageModel;
