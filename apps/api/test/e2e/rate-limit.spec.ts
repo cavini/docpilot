@@ -7,7 +7,11 @@ import { AppModule } from '../../src/app.module.js';
 import { type Env } from '../../src/config/env.schema.js';
 import { ENV } from '../../src/config/env.tokens.js';
 import { loadEnv } from '../../src/config/load-env.js';
-import { RATE_LIMITS } from '../../src/rate-limit/index.js';
+import {
+  DAILY_WINDOW_SECONDS,
+  RATE_LIMITS,
+  type RateLimitTier,
+} from '../../src/rate-limit/index.js';
 import { REDIS } from '../../src/redis/redis.tokens.js';
 import { httpServer } from '../support/http.js';
 
@@ -33,7 +37,7 @@ describe('request limits (e2e)', () => {
 
   it('AC8: refuses once the window is used up, and says when to retry', async () => {
     const server = httpServer(app);
-    const past = RATE_LIMITS.answers.limit + 1;
+    const past = RATE_LIMITS.answers.burst + 1;
     let refused: request.Response | undefined;
 
     for (let attempt = 0; attempt < past; attempt += 1) {
@@ -57,7 +61,7 @@ describe('request limits (e2e)', () => {
     const server = httpServer(app);
     let refused: request.Response | undefined;
 
-    for (let attempt = 0; attempt < RATE_LIMITS.answers.limit + 1; attempt += 1) {
+    for (let attempt = 0; attempt < RATE_LIMITS.answers.burst + 1; attempt += 1) {
       const response = await request(server).post('/ask').send({ question: 'anything' });
 
       if (response.status === 429) {
@@ -69,7 +73,7 @@ describe('request limits (e2e)', () => {
     const retryAfter = Number(refused?.headers['retry-after']);
 
     expect(retryAfter).toBeGreaterThan(0);
-    expect(retryAfter).toBeLessThanOrEqual(RATE_LIMITS.answers.ttlSeconds);
+    expect(retryAfter).toBeLessThanOrEqual(RATE_LIMITS.answers.burstWindowSeconds);
   }, 60_000);
 
   it('AC9: limits asking more tightly than reading', () => {
@@ -77,17 +81,33 @@ describe('request limits (e2e)', () => {
     // the read limit, which would take 120 requests to prove something the
     // constants already state. What matters is that the ordering cannot be
     // changed without this failing.
-    const perSecond = (group: { limit: number; ttlSeconds: number }): number =>
-      group.limit / group.ttlSeconds;
+    const perSecond = (group: RateLimitTier): number => group.burst / group.burstWindowSeconds;
 
     expect(perSecond(RATE_LIMITS.uploads)).toBeLessThan(perSecond(RATE_LIMITS.answers));
     expect(perSecond(RATE_LIMITS.answers)).toBeLessThan(perSecond(RATE_LIMITS.reads));
   });
 
+  it('bounds what a day of one client can cost, which a burst limit does not', () => {
+    // The limit that actually protects a prepaid balance. A burst limit
+    // resets, so on its own it lets one client sit at the limit all day.
+    for (const tier of [RATE_LIMITS.answers, RATE_LIMITS.uploads]) {
+      const ifTheySatAtTheBurstLimit =
+        tier.burst * (DAILY_WINDOW_SECONDS / tier.burstWindowSeconds);
+
+      expect(tier.daily).toBeLessThan(ifTheySatAtTheBurstLimit);
+    }
+  });
+
+  it('leaves room for a thorough look around, measured at about twenty questions', () => {
+    // A limit a curious reader hits is a limit that teaches them the wrong
+    // thing about the product.
+    expect(RATE_LIMITS.answers.daily).toBeGreaterThanOrEqual(25);
+  });
+
   it('AC9: a read is still allowed after asking has been used up', async () => {
     const server = httpServer(app);
 
-    for (let attempt = 0; attempt < RATE_LIMITS.answers.limit + 1; attempt += 1) {
+    for (let attempt = 0; attempt < RATE_LIMITS.answers.burst + 1; attempt += 1) {
       const response = await request(server).post('/ask').send({ question: 'anything' });
 
       if (response.status === 429) {
@@ -143,7 +163,7 @@ describe('request limits (e2e)', () => {
       // The statuses themselves are 401 and then 429 once the guard's own
       // failed-key budget runs out. Either way none of them is counted
       // against the request limiter, which is what this is about.
-      for (let attempt = 0; attempt < RATE_LIMITS.answers.limit + 5; attempt += 1) {
+      for (let attempt = 0; attempt < RATE_LIMITS.answers.burst + 5; attempt += 1) {
         const response = await request(httpServer(guarded)).post('/ask').send({ question: 'x' });
 
         expect([401, 429]).toContain(response.status);

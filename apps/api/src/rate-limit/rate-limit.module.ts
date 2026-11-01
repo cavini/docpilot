@@ -7,11 +7,16 @@ import { type Redis } from 'ioredis';
 import { type Env } from '../config/env.schema.js';
 import { ENV } from '../config/env.tokens.js';
 import { REDIS } from '../redis/redis.tokens.js';
-import { RATE_LIMITS } from './rate-limit.constants.js';
+import { DAILY_WINDOW_SECONDS, RATE_LIMITS } from './rate-limit.constants.js';
 import { RateLimitGuard } from './rate-limit.guard.js';
 
 /**
  * Per-client request limits, counted in Redis.
+ *
+ * Two of them on every route: a burst limit, which bounds how fast one client
+ * may go, and a daily limit, which bounds how much one client may do at all.
+ * Only the second bounds cost - a burst limit resets, so a determined client
+ * can sit at it all day.
  *
  * Redis rather than memory because the count has to survive a restart and be
  * shared by however many processes are running. An in-memory count resets
@@ -32,11 +37,19 @@ import { RateLimitGuard } from './rate-limit.guard.js';
     ThrottlerModule.forRootAsync({
       inject: [ENV, REDIS],
       useFactory: (env: Env, redis: Redis) => ({
+        // Two named throttlers, both applied to every route. A route that
+        // costs more overrides them with a decorator; a route that says
+        // nothing gets the read limits, which is the safe-but-loose default.
         throttlers: [
           {
-            name: 'default',
-            limit: RATE_LIMITS.reads.limit,
-            ttl: RATE_LIMITS.reads.ttlSeconds * 1_000,
+            name: 'burst',
+            limit: RATE_LIMITS.reads.burst,
+            ttl: RATE_LIMITS.reads.burstWindowSeconds * 1_000,
+          },
+          {
+            name: 'daily',
+            limit: RATE_LIMITS.reads.daily,
+            ttl: DAILY_WINDOW_SECONDS * 1_000,
           },
         ],
         storage: new ThrottlerStorageRedisService(redis),
