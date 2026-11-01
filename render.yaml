@@ -28,6 +28,13 @@ services:
       # is committed to a public repository.
       - key: DATABASE_URL
         sync: false
+
+      # Migrations need the direct endpoint. A pooler can hand successive
+      # statements to different backends, and a migration is a sequence that
+      # assumes it shares a session. Without this the release step runs
+      # through the pooler and fails on its first statement.
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
       - key: REDIS_URL
         sync: false
 

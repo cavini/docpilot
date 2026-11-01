@@ -43,10 +43,11 @@ FROM deps AS build
 WORKDIR /repo
 COPY . .
 
-# What `--ignore-scripts` skipped: the native binaries listed under
-# `onlyBuiltDependencies`, which the compiler needs.
+# What `--ignore-scripts` skipped, narrowed to what compiling the API needs.
+# `--recursive` would also run Cypress's postinstall, which downloads and
+# unzips a browser runner the API image will never open.
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm rebuild --recursive
+    pnpm rebuild @swc/core esbuild
 
 # Only what the API needs. Building the web app here would pull in Next and
 # double the image for something Vercel serves.

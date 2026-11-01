@@ -36,9 +36,34 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  // Written to stderr and exited non-zero so the platform treats a failed
-  // migration as a failed release rather than starting an application against
-  // a schema it does not match.
-  process.stderr.write(`migration failed: ${error instanceof Error ? error.message : 'unknown'}\n`);
+  /*
+   * Written to stderr and exited non-zero so the platform treats a failed
+   * migration as a failed release rather than starting an application
+   * against a schema it does not match.
+   *
+   * The cause chain is printed, not just the message. Postgres errors arrive
+   * wrapped, and the wrapper says which query failed while the cause says
+   * why - the half that tells you whether to fix a connection string or a
+   * permission. A first run of this reported only `Failed query: CREATE
+   * SCHEMA ...` and left the actual reason on the floor.
+   */
+  /** Renders a value the driver attached, which may be of any shape. */
+  const asText = (value: unknown): string =>
+    typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+
+  const parts: string[] = [];
+  let current: unknown = error;
+
+  while (current instanceof Error) {
+    const code = asText((current as { code?: unknown }).code);
+    const detail = asText((current as { detail?: unknown }).detail);
+
+    parts.push(
+      [current.message, code === '' ? '' : `(code ${code})`, detail].filter(Boolean).join(' '),
+    );
+    current = current.cause;
+  }
+
+  process.stderr.write(`migration failed: ${parts.join('\n  caused by: ')}\n`);
   process.exit(1);
 });
