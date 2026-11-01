@@ -17,9 +17,16 @@ function keysOf(value: unknown, prefix = ''): string[] {
   });
 }
 
-/** Every ICU placeholder in a message, such as `{count}`. */
+/**
+ * Every ICU placeholder in a message, such as `{count}` or `{count, plural,`.
+ *
+ * The name has to be followed by `}` or `,`, or a plural branch body gets
+ * counted as a placeholder: `{Read from # passage}` opens with a brace too,
+ * and a looser pattern reads `Read` as the name. That made this check fail on
+ * a correct translation, which is worse than it not existing.
+ */
 function placeholdersOf(message: string): string[] {
-  return [...message.matchAll(/\{(\w+)/g)].map((match) => match[1] ?? '').sort();
+  return [...message.matchAll(/\{(\w+)\s*[,}]/gu)].map((match) => match[1] ?? '').sort();
 }
 
 /** Every leaf string in a catalogue, by key path. */
