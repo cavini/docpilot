@@ -18,7 +18,13 @@ export function generateStaticParams() {
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('app');
 
-  return { title: t('name'), description: t('tagline') };
+  return {
+    title: { default: t('name'), template: `%s · ${t('name')}` },
+    description: t('tagline'),
+    // An SVG favicon: one file, sharp at any size, and it follows the
+    // reader's theme because it carries its own background.
+    icons: { icon: [{ url: '/icon.svg', type: 'image/svg+xml' }] },
+  };
 }
 
 /**
@@ -36,7 +42,7 @@ export default async function LocaleLayout({ children }: { children: ReactNode }
 
   return (
     <html lang={locale}>
-      <body className="min-h-screen antialiased">
+      <body className="bg-surface text-content min-h-dvh antialiased">
         <NextIntlClientProvider>
           <StoreProvider>
             <AccessGate>{children}</AccessGate>

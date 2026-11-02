@@ -9,6 +9,8 @@
  * source is `.tsx`.
  */
 export { ApprovalPrompt, type ApprovalPromptProps } from './approval/approval-prompt';
+export { Logo, type LogoProps } from './brand/logo';
+export { Mark, type MarkProps } from './brand/mark';
 export { Button, type ButtonProps, type ButtonSize, type ButtonVariant } from './button/button';
 export { CitationChip, type CitationChipProps } from './citation-chip/citation-chip';
 export { Dropzone, type DropzoneProps } from './dropzone/dropzone';

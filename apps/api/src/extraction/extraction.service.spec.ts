@@ -40,7 +40,19 @@ function asArrayOutput(items: unknown): ScriptedResponse {
 
 /** Builds the service with everything substituted. */
 function createService(
-  options: { results?: ScoredChunk[]; script?: ScriptedResponse[]; budget?: BudgetLike } = {},
+  options: {
+    results?: ScoredChunk[];
+    script?: ScriptedResponse[];
+    budget?: BudgetLike;
+    /**
+     * Which provider the substitute stands in for.
+     *
+     * The scripted model is a mock underneath whatever this says. It matters
+     * because rows from a mock are reported as degraded regardless of the
+     * budget, so a test meaning "a real provider answered" has to say so.
+     */
+    provider?: string;
+  } = {},
 ) {
   const budget = options.budget ?? budgetAllowing();
   const search = jest.fn().mockResolvedValue({
@@ -50,7 +62,8 @@ function createService(
   });
 
   const model = createScriptedLanguageModel(options.script ?? [asArrayOutput([ENDPOINT])]);
-  const chatModel = jest.fn(() => ({ model, provider: 'mock', modelId: 'mock-chat' }));
+  const provider = options.provider ?? 'openai';
+  const chatModel = jest.fn(() => ({ model, provider, modelId: 'mock-chat' }));
   const record = jest.fn().mockResolvedValue(undefined);
   const logger = { setContext: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 

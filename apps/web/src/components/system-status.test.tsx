@@ -59,7 +59,7 @@ describe('SystemStatus', () => {
     expect(await screen.findByText('Database')).toBeInTheDocument();
     expect(screen.getByText('Redis')).toBeInTheDocument();
     expect(screen.getByText('Storage')).toBeInTheDocument();
-    expect(screen.getByText('Overall')).toBeInTheDocument();
+    expect(screen.getByText('All systems operational')).toBeInTheDocument();
   });
 
   it('AC3: states each status in words, not only as a colour', async () => {
@@ -67,7 +67,9 @@ describe('SystemStatus', () => {
 
     renderWithProviders(<SystemStatus />);
 
-    expect(await screen.findAllByText('Operational')).toHaveLength(4);
+    // Three dependencies. The overall state is the summary line above them,
+    // worded differently, rather than a fourth row repeating the word.
+    expect(await screen.findAllByText('Operational')).toHaveLength(3);
   });
 
   it('AC4: reports a failing dependency with its own status', async () => {
@@ -80,9 +82,12 @@ describe('SystemStatus', () => {
     renderWithProviders(<SystemStatus />);
 
     await waitFor(() => {
-      expect(screen.getAllByText('Unavailable')).toHaveLength(2);
+      // Redis alone. The overall state is the summary line, worded
+      // separately, rather than a row repeating a dependency's word.
+      expect(screen.getAllByText('Unavailable')).toHaveLength(1);
     });
     expect(screen.getAllByText('Operational')).toHaveLength(2);
+    expect(screen.getByText('Some systems are degraded')).toBeInTheDocument();
   });
 
   it('AC5: shows which dependency failed even when the API answers 503', async () => {
@@ -100,9 +105,9 @@ describe('SystemStatus', () => {
     renderWithProviders(<SystemStatus />);
 
     await waitFor(() => {
-      expect(screen.getAllByText('Unavailable')).toHaveLength(2);
+      expect(screen.getAllByText('Unavailable')).toHaveLength(1);
     });
-    expect(screen.queryByText(/not reachable/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/not responding/)).not.toBeInTheDocument();
   });
 
   it('AC6: shows an actionable message when the API cannot be reached', async () => {
@@ -110,9 +115,7 @@ describe('SystemStatus', () => {
 
     renderWithProviders(<SystemStatus />);
 
-    expect(
-      await screen.findByText('The API is not reachable. Start it with pnpm dev.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('The service is not responding right now.')).toBeInTheDocument();
   });
 
   it('AC7: announces changes through a live region', async () => {
@@ -130,6 +133,8 @@ describe('SystemStatus', () => {
     const { container } = renderWithProviders(<SystemStatus />);
 
     await screen.findByText('Database');
-    expect(container.querySelectorAll('[aria-hidden="true"]')).toHaveLength(4);
+
+    // One dot per dependency, plus the summary's own dot and its chevron.
+    expect(container.querySelectorAll('[aria-hidden="true"]')).toHaveLength(5);
   });
 });

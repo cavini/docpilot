@@ -21,6 +21,16 @@ export interface Extraction {
   citations: ExtractionCitation[];
   /** Items the server dropped for failing validation. */
   dropped: number;
+  /**
+   * True when the rows did not come from a real model.
+   *
+   * Either no provider is connected or the day's budget is spent. The table
+   * has to say so above itself: a placeholder row that explains itself in
+   * its own cells is indistinguishable from data.
+   */
+  degraded: boolean;
+  /** True when the budget, rather than a missing provider, is the reason. */
+  budgetSpent: boolean;
   error: string | null;
   run: (schema: string, options?: { documentId?: string; query?: string }) => void;
   stop: () => void;
@@ -46,6 +56,8 @@ export function useExtraction(): Extraction {
   const [items, setItems] = useState<Record<string, unknown>[]>([]);
   const [citations, setCitations] = useState<ExtractionCitation[]>([]);
   const [dropped, setDropped] = useState(0);
+  const [degraded, setDegraded] = useState(false);
+  const [budgetSpent, setBudgetSpent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abort = useRef<AbortController | null>(null);
 
@@ -62,6 +74,8 @@ export function useExtraction(): Extraction {
     setItems([]);
     setCitations([]);
     setDropped(0);
+    setDegraded(false);
+    setBudgetSpent(false);
     setError(null);
   }, []);
 
@@ -75,6 +89,8 @@ export function useExtraction(): Extraction {
       setItems([]);
       setCitations([]);
       setDropped(0);
+      setDegraded(false);
+      setBudgetSpent(false);
       setError(null);
 
       void (async () => {
@@ -126,6 +142,13 @@ export function useExtraction(): Extraction {
             for (const event of parsed.events) {
               if (event.type === 'schema') {
                 setCitations(event.citations);
+                setDegraded(event.degraded === true);
+                // A reset time is only sent when the ceiling is the reason.
+                setBudgetSpent(
+                  event.degraded === true &&
+                    event.resetsAt !== null &&
+                    event.resetsAt !== undefined,
+                );
               } else if (event.type === 'item') {
                 setItems((current) => [...current, event.item]);
               } else if (event.type === 'done') {
@@ -153,7 +176,7 @@ export function useExtraction(): Extraction {
     [],
   );
 
-  return { status, items, citations, dropped, error, run, stop, reset };
+  return { status, items, citations, dropped, degraded, budgetSpent, error, run, stop, reset };
 }
 
 /**

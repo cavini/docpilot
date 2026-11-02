@@ -10,14 +10,16 @@
   },
   "status": {
     "loading": "Verificando a API…",
-    "unreachable": "A API não está acessível. Inicie-a com pnpm dev.",
+    "unreachable": "O serviço não está respondendo no momento.",
     "overall": "Geral",
     "database": "Banco de dados",
     "redis": "Redis",
     "storage": "Armazenamento",
     "ok": "Operacional",
     "degraded": "Degradado",
-    "down": "Indisponível"
+    "down": "Indisponível",
+    "allOperational": "Todos os sistemas operacionais",
+    "someDegraded": "Alguns sistemas degradados"
   },
   "locale": {
     "label": "Idioma",
@@ -54,8 +56,8 @@
       "description": "Envie um PDF, Markdown ou arquivo de texto e ele fica pesquisável em segundos."
     },
     "unreachable": {
-      "title": "A API não está acessível",
-      "description": "Inicie com pnpm dev e tente de novo.",
+      "title": "Não foi possível carregar seus documentos",
+      "description": "O serviço não está respondendo no momento. Geralmente passa em instantes.",
       "retry": "Tentar de novo"
     },
     "status": {
@@ -69,7 +71,8 @@
     "language": {
       "english": "Inglês",
       "portuguese": "Português"
-    }
+    },
+    "readyOf": "{ready} de {total} prontos"
   },
   "chat": {
     "heading": "Perguntar",
@@ -94,7 +97,17 @@
       "page": "Página {page}",
       "pageRange": "Páginas {from}–{to}"
     },
-    "useTools": "Usar ferramentas"
+    "useTools": "Pesquisar em vários documentos",
+    "welcome": {
+      "title": "Respostas que você pode conferir",
+      "body": "Pergunte qualquer coisa sobre os documentos da biblioteca. Toda resposta traz uma citação para o trecho exato de onde veio, então você confere em um clique.",
+      "tryLabel": "Experimente",
+      "examples": {
+        "auth": "Como faço a autenticação?",
+        "rateLimits": "Quais são os limites de requisição?",
+        "refunds": "Quanto tempo leva um reembolso?"
+      }
+    }
   },
   "agent": {
     "status": {
@@ -121,19 +134,19 @@
   },
   "extraction": {
     "heading": "Extrair",
-    "intro": "Retire dados estruturados dos documentos, usando um formato que este servidor conhece.",
-    "schemaLabel": "Formato",
-    "run": "Extrair",
+    "intro": "Transforme os documentos em uma tabela. Escolha o que quer extrair e baixe em JSON quando terminar.",
+    "schemaLabel": "O que extrair",
+    "run": "Montar a tabela",
     "stop": "Parar",
     "download": "Baixar JSON",
-    "waiting": "Extraindo…",
+    "waiting": "Lendo os documentos…",
     "dropped": "{count, plural, one {# item descartado} other {# itens descartados}}",
     "schemasUnavailable": "Não foi possível carregar a lista de formatos.",
     "readFrom": "{count, plural, one {Lido de # trecho} other {Lido de # trechos}} em {documents}.",
     "tableCaption": "{count, plural, one {# item extraído} other {# itens extraídos}}",
     "empty": {
-      "title": "Nada extraído ainda",
-      "description": "Escolha um formato e clique em Extrair. As linhas aparecem conforme são encontradas."
+      "title": "Nada montado ainda",
+      "description": "Escolha o que extrair e monte a tabela. As linhas aparecem conforme são encontradas."
     },
     "schema": {
       "api_endpoints": "Endpoints da API",
@@ -150,6 +163,13 @@
       "gist": "Cobre",
       "question": "Pergunta",
       "answer": "Resposta"
+    },
+    "mockNotice": "Nenhum modelo de linguagem está conectado, então a linha abaixo é um exemplo, não algo encontrado nos seus documentos. A busca e as citações abaixo da tabela são reais.",
+    "budgetNotice": "O orçamento de hoje acabou, então a linha abaixo é um exemplo, não algo encontrado nos seus documentos.",
+    "about": {
+      "api_endpoints": "Todos os endpoints HTTP descritos nos documentos, com método, caminho, o que fazem e se exigem token.",
+      "document_outline": "Os títulos dos documentos, com a profundidade de cada um e uma linha sobre o que cobre.",
+      "faq_pairs": "Pares de pergunta e resposta que já existem nos documentos, prontos para colar numa página de ajuda."
     }
   },
   "access": {
@@ -162,5 +182,12 @@
     "note": "A chave fica guardada apenas nesta aba e é esquecida quando você a fecha.",
     "budgetSpent": "O orçamento de hoje acabou, então as respostas abaixo vêm de um substituto, não de um modelo. A busca e as citações são reais.",
     "budgetSpentUntil": "O orçamento de hoje acabou, então as respostas abaixo vêm de um substituto, não de um modelo. A busca e as citações são reais. Ele reinicia às {resetsAt, time, short} UTC."
+  },
+  "workspace": {
+    "label": "Área de trabalho",
+    "tab": {
+      "ask": "Perguntar",
+      "extract": "Extrair"
+    }
   }
 }

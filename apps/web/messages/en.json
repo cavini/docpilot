@@ -10,14 +10,16 @@
   },
   "status": {
     "loading": "Checking the API…",
-    "unreachable": "The API is not reachable. Start it with pnpm dev.",
+    "unreachable": "The service is not responding right now.",
     "overall": "Overall",
     "database": "Database",
     "redis": "Redis",
     "storage": "Storage",
     "ok": "Operational",
     "degraded": "Degraded",
-    "down": "Unavailable"
+    "down": "Unavailable",
+    "allOperational": "All systems operational",
+    "someDegraded": "Some systems are degraded"
   },
   "locale": {
     "label": "Language",
@@ -54,8 +56,8 @@
       "description": "Add a PDF, Markdown or text file and it becomes searchable in a few seconds."
     },
     "unreachable": {
-      "title": "The API is not reachable",
-      "description": "Start it with pnpm dev, then try again.",
+      "title": "Your documents could not be loaded",
+      "description": "The service is not responding right now. This usually passes in a moment.",
       "retry": "Try again"
     },
     "status": {
@@ -69,7 +71,8 @@
     "language": {
       "english": "English",
       "portuguese": "Portuguese"
-    }
+    },
+    "readyOf": "{ready} of {total} ready"
   },
   "chat": {
     "heading": "Ask",
@@ -94,7 +97,17 @@
       "page": "Page {page}",
       "pageRange": "Pages {from}–{to}"
     },
-    "useTools": "Use tools"
+    "useTools": "Search across documents",
+    "welcome": {
+      "title": "Answers you can check",
+      "body": "Ask anything about the documents in the library. Every answer carries a citation back to the exact passage it came from, so you can verify it in one click.",
+      "tryLabel": "Try one",
+      "examples": {
+        "auth": "How do I authenticate?",
+        "rateLimits": "What are the rate limits?",
+        "refunds": "How long does a refund take?"
+      }
+    }
   },
   "agent": {
     "status": {
@@ -121,19 +134,19 @@
   },
   "extraction": {
     "heading": "Extract",
-    "intro": "Pull structured data out of the documents, using a shape this server knows.",
-    "schemaLabel": "Shape",
-    "run": "Extract",
+    "intro": "Turn the documents into a table. Pick what you want pulled out, and download it as JSON when it is done.",
+    "schemaLabel": "What to pull out",
+    "run": "Build the table",
     "stop": "Stop",
     "download": "Download JSON",
-    "waiting": "Extracting…",
+    "waiting": "Reading the documents…",
     "dropped": "{count, plural, one {# item dropped} other {# items dropped}}",
     "schemasUnavailable": "The list of shapes could not be loaded.",
     "readFrom": "{count, plural, one {Read from # passage} other {Read from # passages}} in {documents}.",
     "tableCaption": "{count, plural, one {# extracted item} other {# extracted items}}",
     "empty": {
-      "title": "Nothing extracted yet",
-      "description": "Choose a shape and press Extract. Rows appear as they are found."
+      "title": "Nothing built yet",
+      "description": "Choose what to pull out, then build the table. Rows appear as they are found."
     },
     "schema": {
       "api_endpoints": "API endpoints",
@@ -150,6 +163,13 @@
       "gist": "Covers",
       "question": "Question",
       "answer": "Answer"
+    },
+    "mockNotice": "No language model is connected, so the row below is a placeholder rather than anything found in your documents. The retrieval and the citations under the table are real.",
+    "budgetNotice": "Today's budget is spent, so the row below is a placeholder rather than anything found in your documents.",
+    "about": {
+      "api_endpoints": "Every HTTP endpoint the documents describe, with its method, path, what it does, and whether it needs a token.",
+      "document_outline": "The headings across the documents, with how deep each one sits and a line on what it covers.",
+      "faq_pairs": "Question-and-answer pairs the documents already contain, ready to paste into a help page."
     }
   },
   "access": {
@@ -162,5 +182,12 @@
     "note": "The key is kept for this tab only and is forgotten when you close it.",
     "budgetSpent": "Today's budget is spent, so answers below come from a stub rather than a model. Retrieval and citations are real.",
     "budgetSpentUntil": "Today's budget is spent, so answers below come from a stub rather than a model. Retrieval and citations are real. It resets at {resetsAt, time, short} UTC."
+  },
+  "workspace": {
+    "label": "Workspace",
+    "tab": {
+      "ask": "Ask",
+      "extract": "Extract"
+    }
   }
 }

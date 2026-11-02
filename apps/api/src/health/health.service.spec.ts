@@ -96,13 +96,28 @@ describe('HealthService', () => {
 
   it('AC7: probes concurrently rather than one after another', async () => {
     const { service, doubles } = await createService();
-    const started: string[] = [];
+
+    /*
+      Asserted on the order of events rather than on the clock.
+
+      An earlier version timed three 20ms probes and required the total to
+      come in under 55ms - true when they run together, and also true most
+      of the time when they do not, on a machine running nothing else. Under
+      a full parallel suite the timers drift and it failed intermittently,
+      which cost an afternoon of looking in the wrong place.
+
+      "Concurrent" means every probe starts before any of them finishes.
+      That is what this records, and no amount of load changes it.
+    */
+    const events: string[] = [];
     const block =
       <T>(name: string, value: T) =>
       () => {
-        started.push(name);
+        events.push(`start:${name}`);
+
         return new Promise<T>((resolve) => {
           setTimeout(() => {
+            events.push(`end:${name}`);
             resolve(value);
           }, 20);
         });
@@ -112,14 +127,17 @@ describe('HealthService', () => {
     doubles.redis.ping.mockImplementation(block('redis', 'PONG'));
     doubles.storage.probe.mockImplementation(block('storage', undefined));
 
-    const elapsedStart = Date.now();
     await service.check();
-    const elapsed = Date.now() - elapsedStart;
 
-    // All three start before any finishes, so the total is near one probe's
-    // duration rather than the sum of the three.
-    expect(started).toStrictEqual(['database', 'redis', 'storage']);
-    expect(elapsed).toBeLessThan(55);
+    const lastStart = events.findLastIndex((event) => event.startsWith('start:'));
+    const firstEnd = events.findIndex((event) => event.startsWith('end:'));
+
+    expect(events.filter((event) => event.startsWith('start:'))).toStrictEqual([
+      'start:database',
+      'start:redis',
+      'start:storage',
+    ]);
+    expect(lastStart).toBeLessThan(firstEnd);
   });
 
   it('AC8: reports an ISO 8601 timestamp and a non negative uptime', async () => {

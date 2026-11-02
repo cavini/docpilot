@@ -14,6 +14,14 @@ export interface DropzoneProps {
   inputLabel: string;
   /** Blocks interaction while an upload is in flight. */
   disabled?: boolean;
+  /**
+   * Tightens the padding and the type for a narrow column.
+   *
+   * The resting size is built for a full-width page. In a sidebar rail the
+   * same box is taller than three documents, which inverts what the rail is
+   * for.
+   */
+  compact?: boolean;
 }
 
 /**
@@ -42,6 +50,7 @@ export function Dropzone({
   hint,
   inputLabel,
   disabled = false,
+  compact = false,
 }: DropzoneProps): ReactNode {
   const inputId = useId();
   const depth = useRef(0);
@@ -98,12 +107,16 @@ export function Dropzone({
       onDragOver={onDragOver}
       onDragEnter={onDragEnter}
       onDragLeave={onDragLeave}
-      className={`flex cursor-pointer flex-col items-center gap-1 rounded-lg border-2 border-dashed px-6 py-8 text-center transition-colors ${
+      className={`flex cursor-pointer flex-col items-center gap-1 rounded-lg border-2 border-dashed text-center transition-colors ${
+        compact ? 'px-3 py-4' : 'px-6 py-8'
+      } ${
         over ? 'border-accent bg-accent/5' : 'border-border hover:border-accent/50'
       } ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
     >
-      <span className="font-medium text-content">{label}</span>
-      {hint === undefined ? null : <span className="text-sm text-content-muted">{hint}</span>}
+      <span className={`text-content font-medium ${compact ? 'text-sm' : ''}`}>{label}</span>
+      {hint === undefined ? null : (
+        <span className={`text-content-muted ${compact ? 'text-xs' : 'text-sm'}`}>{hint}</span>
+      )}
       <input
         id={inputId}
         type="file"

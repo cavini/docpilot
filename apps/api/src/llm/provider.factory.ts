@@ -105,27 +105,40 @@ export const CANNED_MOCK_AGENT_SCRIPT: ScriptedResponse[] = [
  * The retrieval, the validation, the deduplication, the streaming and the
  * table are all real; only the items are stubs.
  */
+/*
+ * Placeholder rows for the mock provider.
+ *
+ * They used to explain themselves - "LLM_PROVIDER is mock, set a real
+ * provider" written into a `summary` column - which is the right content for
+ * a developer reading a terminal and the wrong content for a table. A reader
+ * who does not know what an environment variable is sees a row of data that
+ * makes no sense, with nothing saying it is not data.
+ *
+ * The explanation moved to where it belongs: the stream reports `degraded`,
+ * and the interface says so above the table in a sentence. These rows are
+ * now plainly shaped like the real thing and plainly marked `example`, so
+ * they read as a sample of the format rather than as a malfunction.
+ */
 const CANNED_MOCK_ITEMS: Record<string, unknown[]> = {
   api_endpoints: [
     {
-      method: 'GET',
-      path: '/this-row-is-from-the-mock-provider',
-      summary: 'LLM_PROVIDER is "mock", so nothing was really extracted. Set a real provider.',
-      authenticated: false,
+      method: 'POST',
+      path: '/example/endpoint',
+      summary: 'An example row, showing the shape a real extraction returns.',
+      authenticated: true,
     },
   ],
   document_outline: [
     {
       level: 1,
-      heading: 'This row is from the mock provider',
-      gist: 'LLM_PROVIDER is "mock", so nothing was really extracted. Set a real provider.',
+      heading: 'Example heading',
+      gist: 'An example row, showing the shape a real extraction returns.',
     },
   ],
   faq_pairs: [
     {
-      question: 'Why does this table have one odd-looking row?',
-      answer:
-        'Because LLM_PROVIDER is "mock". Retrieval and validation are real; the row is a stub.',
+      question: 'What does an extracted row look like?',
+      answer: 'Like this one - an example, showing the shape a real extraction returns.',
     },
   ],
 };

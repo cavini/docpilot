@@ -80,15 +80,15 @@ describe('ExtractionTable in a real browser', () => {
   it('AC13: says it is working before the first row arrives', () => {
     cy.mountWithProviders(<ExtractionTable fields={fields} items={[]} streaming />);
 
-    cy.contains('Extracting').should('be.visible');
+    cy.contains('Reading the documents').should('be.visible');
     cy.get('table').should('not.exist');
   });
 
   it('shows the empty state when nothing is streaming and nothing arrived', () => {
     cy.mountWithProviders(<ExtractionTable fields={fields} items={[]} streaming={false} />);
 
-    cy.contains('Nothing extracted yet').should('be.visible');
-    cy.contains('Extracting').should('not.exist');
+    cy.contains('Nothing built yet').should('be.visible');
+    cy.contains('Reading the documents').should('not.exist');
   });
 
   it('heads each column from the schema the server published', () => {

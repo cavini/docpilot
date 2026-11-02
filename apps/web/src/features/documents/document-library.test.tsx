@@ -75,7 +75,7 @@ describe('DocumentLibrary', () => {
     mockFetch([new Error('network down')]);
     renderWithProviders(<DocumentLibrary />);
 
-    expect(await screen.findByText('The API is not reachable')).toBeInTheDocument();
+    expect(await screen.findByText('Your documents could not be loaded')).toBeInTheDocument();
     expect(screen.queryByText('No documents yet')).toBeNull();
   });
 
@@ -83,7 +83,7 @@ describe('DocumentLibrary', () => {
     const fetchMock = mockFetch([new Error('network down')]);
     renderWithProviders(<DocumentLibrary />);
 
-    await screen.findByText('The API is not reachable');
+    await screen.findByText('Your documents could not be loaded');
     const before = fetchMock.mock.calls.length;
 
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));

@@ -139,6 +139,19 @@ JSON instead, which is ugly and honest.
 
 → [`structured-output.md`](./structured-output.md).
 
+## A build that deletes its own evidence
+
+`tsBuildInfoFile` points inside `dist/` rather than sitting beside the tsconfig,
+where TypeScript puts it by default. With the default, `rm -rf dist` leaves the
+build info behind — and the next build reads it, decides nothing has changed,
+and emits nothing. Exit code 0, no output, and the failure surfaces in whatever
+imports the package rather than in the build that caused it.
+
+Keeping the two together means they can only be deleted as a pair. It is the
+same bug as the Turborepo cache that listed `dist/**` as an output and not
+`*.tsbuildinfo`, which is how a stale build survived a forced rebuild earlier in
+this project.
+
 ## Internationalisation
 
 English and Brazilian Portuguese, with the locale as a route segment (`/en`,

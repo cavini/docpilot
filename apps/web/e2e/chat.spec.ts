@@ -90,8 +90,12 @@ test('AC1: an empty chat explains what it answers from', async ({ page }) => {
   await stubChat(page, ['anything']);
   await page.goto('/en');
 
-  await expect(page.getByText('Ask a question')).toBeVisible();
-  await expect(page.getByText(/Answers come only from the documents/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Answers you can check' })).toBeVisible();
+  await expect(page.getByText(/citation back to the exact passage/)).toBeVisible();
+
+  // The welcome hands over questions the seeded corpus can answer, so a
+  // reader can get a cited answer without typing anything.
+  await expect(page.getByRole('button', { name: 'How do I authenticate?' })).toBeVisible();
 });
 
 test('AC1: the question and the answer both appear in the transcript', async ({ page }) => {
@@ -173,15 +177,17 @@ test('a new conversation clears the transcript', async ({ page }) => {
   await page.getByRole('button', { name: 'New conversation' }).click();
 
   await expect(page.getByText('How long is a token valid?')).toBeHidden();
-  await expect(page.getByText('Ask a question')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Answers you can check' })).toBeVisible();
 });
 
 test('AC14: the chat is localised in pt-BR', async ({ page }) => {
   await stubChat(page, ['Uma resposta [1].']);
   await page.goto('/pt-BR');
 
-  await expect(page.getByRole('heading', { name: 'Perguntar' })).toBeVisible();
-  await expect(page.getByText('Faça uma pergunta')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Perguntar' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Respostas que você pode conferir' }),
+  ).toBeVisible();
 
   await page.getByLabel('Sua pergunta').fill('Como faço a autenticação?');
   // `exact`, because the upload input is labelled "Escolher um documento para
