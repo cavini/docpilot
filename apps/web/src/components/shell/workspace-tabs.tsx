@@ -14,6 +14,15 @@ export interface WorkspaceTab {
 /** Props accepted by {@link WorkspaceTabs}. */
 export interface WorkspaceTabsProps {
   tabs: WorkspaceTab[];
+  /**
+   * Sits at the end of the tab bar.
+   *
+   * For the language control, which needs somewhere that exists at every
+   * width. Rendered once in a mobile header and once in a desktop rail, it
+   * was two identically labelled selects in the document at all times - one
+   * hidden by CSS, both found by a screen reader.
+   */
+  trailing?: ReactNode;
 }
 
 /**
@@ -27,50 +36,50 @@ export interface WorkspaceTabsProps {
  * so switching away from a running extraction and back does not lose the rows
  * that arrived while it was off screen.
  */
-export function WorkspaceTabs({ tabs }: WorkspaceTabsProps): ReactNode {
+export function WorkspaceTabs({ tabs, trailing }: WorkspaceTabsProps): ReactNode {
   const t = useTranslations('workspace');
   const groupId = useId();
   const [active, setActive] = useState(tabs[0]?.id ?? '');
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div
-        role="tablist"
-        aria-label={t('label')}
-        className="border-border-subtle flex shrink-0 items-center gap-1 border-b px-4"
-      >
-        {tabs.map((tab) => {
-          const selected = tab.id === active;
+      <div className="border-border-subtle flex shrink-0 items-center gap-1 border-b px-2 sm:px-4">
+        <div role="tablist" aria-label={t('label')} className="flex flex-1 items-center gap-1">
+          {tabs.map((tab) => {
+            const selected = tab.id === active;
 
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              id={`${groupId}-tab-${tab.id}`}
-              aria-selected={selected}
-              aria-controls={`${groupId}-panel-${tab.id}`}
-              onClick={() => {
-                setActive(tab.id);
-              }}
-              className={[
-                'relative px-3 py-3 text-sm font-medium transition-colors',
-                selected ? 'text-content' : 'text-content-muted hover:text-content',
-              ].join(' ')}
-            >
-              {t(`tab.${tab.labelKey}`)}
-              {/* Drawn rather than a bottom border, so the indicator can sit
-                  on the divider instead of nudging the label up by a pixel. */}
-              <span
-                aria-hidden
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                id={`${groupId}-tab-${tab.id}`}
+                aria-selected={selected}
+                aria-controls={`${groupId}-panel-${tab.id}`}
+                onClick={() => {
+                  setActive(tab.id);
+                }}
                 className={[
-                  'bg-accent absolute inset-x-2 -bottom-px h-0.5 rounded-full transition-opacity',
-                  selected ? 'opacity-100' : 'opacity-0',
+                  'relative px-3 py-3 text-sm font-medium transition-colors',
+                  selected ? 'text-content' : 'text-content-muted hover:text-content',
                 ].join(' ')}
-              />
-            </button>
-          );
-        })}
+              >
+                {t(`tab.${tab.labelKey}`)}
+                {/* Drawn rather than a bottom border, so the indicator can sit
+                  on the divider instead of nudging the label up by a pixel. */}
+                <span
+                  aria-hidden
+                  className={[
+                    'bg-accent absolute inset-x-2 -bottom-px h-0.5 rounded-full transition-opacity',
+                    selected ? 'opacity-100' : 'opacity-0',
+                  ].join(' ')}
+                />
+              </button>
+            );
+          })}
+        </div>
+
+        {trailing}
       </div>
 
       {tabs.map((tab) => (

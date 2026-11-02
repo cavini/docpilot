@@ -88,7 +88,7 @@ export function ExtractionView(): ReactNode {
       screen with the table they describe nowhere near them.
     */
     <section
-      className="mx-auto flex w-full max-w-3xl flex-col gap-5 overflow-y-auto px-5 py-6"
+      className="mx-auto flex w-full max-w-3xl flex-col gap-5 overflow-y-auto px-4 py-4 sm:px-5 sm:py-6"
       aria-labelledby="extraction-heading"
     >
       <div className="flex flex-wrap items-start justify-between gap-2">

@@ -1,3 +1,4 @@
+import { LibraryCount } from '@/features/documents/library-count';
 import { LocaleSwitcher } from '@/components/locale-switcher';
 import { AppShell } from '@/components/shell/app-shell';
 import { WorkspaceTabs } from '@/components/shell/workspace-tabs';
@@ -18,7 +19,7 @@ import { ExtractionView } from '@/features/extraction/extraction-view';
 export default function HomePage() {
   return (
     <AppShell
-      aside={<LocaleSwitcher />}
+      libraryCount={<LibraryCount />}
       sidebar={
         /*
           The library takes the space that is left and scrolls; the status
@@ -37,6 +38,7 @@ export default function HomePage() {
       }
     >
       <WorkspaceTabs
+        trailing={<LocaleSwitcher />}
         tabs={[
           { id: 'ask', labelKey: 'ask', content: <ChatView /> },
           { id: 'extract', labelKey: 'extract', content: <ExtractionView /> },
