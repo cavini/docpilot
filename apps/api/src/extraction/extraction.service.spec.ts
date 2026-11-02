@@ -50,7 +50,8 @@ function createService(
   });
 
   const model = createScriptedLanguageModel(options.script ?? [asArrayOutput([ENDPOINT])]);
-  const chatModel = jest.fn(() => ({ model, provider: 'mock', modelId: 'mock-chat' }));
+  const provider = options.provider ?? 'openai';
+  const chatModel = jest.fn(() => ({ model, provider, modelId: 'mock-chat' }));
   const record = jest.fn().mockResolvedValue(undefined);
   const logger = { setContext: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 

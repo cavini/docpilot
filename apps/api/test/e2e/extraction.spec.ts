@@ -89,7 +89,7 @@ describe('extraction (e2e)', () => {
   });
 
   describe('POST /extract', () => {
-    it('AC1: extracts with the mock provider, which is obviously canned', async () => {
+    it('AC1: extracts with the mock provider, and says the rows are not real', async () => {
       const { body } = await request(httpServer(app))
         .post('/extract')
         .send({ schema: 'api_endpoints' })
@@ -97,9 +97,19 @@ describe('extraction (e2e)', () => {
 
       expect(body.schema).toBe('api_endpoints');
       expect(body.items.length).toBeGreaterThan(0);
-      // The stub announces itself, so nobody mistakes it for extracted data.
-      expect(JSON.stringify(body.items)).toContain('mock');
       expect(body).toMatchObject({ dropped: 0, repaired: false });
+
+      /*
+        The flag, not the contents.
+
+        The stub used to announce itself inside a `summary` column - "set a
+        real provider" written where a description of an endpoint belongs.
+        That is the right message for a developer reading a terminal and
+        gibberish in a table, so it is reported as a field a caller can
+        branch on and the rows are plainly examples.
+      */
+      expect(body.degraded).toBe(true);
+      expect(JSON.stringify(body.items)).not.toContain('LLM_PROVIDER');
     }, 60_000);
 
     it('AC8: returns citations back to real passages', async () => {

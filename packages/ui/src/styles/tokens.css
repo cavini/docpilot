@@ -12,28 +12,60 @@
  * hue changes.
  */
 @theme {
-  --color-surface: oklch(100% 0 0);
-  --color-surface-muted: oklch(97% 0.004 250);
-  --color-border: oklch(90% 0.006 250);
-  --color-content: oklch(25% 0.012 250);
-  --color-content-muted: oklch(50% 0.012 250);
-  --color-accent: oklch(55% 0.16 255);
+  --color-surface: oklch(99% 0.004 265);
+  /* Where the sidebar and other recessed areas sit. */
+  --color-surface-sunken: oklch(96.5% 0.006 265);
+  --color-surface-muted: oklch(97.5% 0.005 265);
+  /* A card lifted off the page. On light, that means whiter, not greyer. */
+  --color-surface-raised: oklch(100% 0 0);
+  --color-border: oklch(91% 0.008 265);
+  /* For a divider that should be felt rather than seen. */
+  --color-border-subtle: oklch(94.5% 0.006 265);
+  --color-content: oklch(24% 0.018 265);
+  --color-content-muted: oklch(52% 0.016 265);
+  --color-accent: oklch(55% 0.17 262);
   --color-accent-contrast: oklch(100% 0 0);
-  --color-ok: oklch(62% 0.15 150);
-  --color-warn: oklch(72% 0.16 75);
-  --color-danger: oklch(58% 0.19 25);
+  /* A wash of the accent, for a selected row or a quiet highlight. */
+  --color-accent-soft: oklch(95% 0.03 262);
+  --color-ok: oklch(60% 0.15 155);
+  --color-warn: oklch(70% 0.16 75);
+  --color-danger: oklch(57% 0.19 25);
+
+  /*
+   * Shadows, as tokens rather than as Tailwind's defaults.
+   *
+   * Tailwind's shadows are neutral black at low opacity, which on a tinted
+   * surface reads as grey smudge. These carry the same hue as the palette, so
+   * a lifted card looks lit rather than dirty.
+   */
+  --shadow-soft: 0 1px 2px oklch(24% 0.018 265 / 0.04), 0 2px 8px oklch(24% 0.018 265 / 0.04);
+  --shadow-lifted: 0 1px 2px oklch(24% 0.018 265 / 0.05), 0 8px 24px oklch(24% 0.018 265 / 0.07);
 }
 
 /* Follows the reader's system setting rather than forcing a theme. */
 @media (prefers-color-scheme: dark) {
   @theme {
-    --color-surface: oklch(20% 0.012 250);
-    --color-surface-muted: oklch(25% 0.012 250);
-    --color-border: oklch(33% 0.012 250);
-    --color-content: oklch(96% 0.004 250);
-    --color-content-muted: oklch(72% 0.01 250);
-    --color-accent: oklch(72% 0.14 255);
-    --color-accent-contrast: oklch(20% 0.012 250);
+    /*
+     * Not a flat near-black. A hint of blue in the dark surfaces keeps the
+     * page from reading as switched-off, and gives the accent something to
+     * sit against.
+     */
+    --color-surface: oklch(21% 0.016 265);
+    --color-surface-sunken: oklch(18% 0.016 265);
+    --color-surface-muted: oklch(25% 0.016 265);
+    /* On dark, a lifted card is lighter than the page, not whiter. */
+    --color-surface-raised: oklch(24.5% 0.017 265);
+    --color-border: oklch(31% 0.016 265);
+    --color-border-subtle: oklch(26% 0.016 265);
+    --color-content: oklch(96% 0.006 265);
+    --color-content-muted: oklch(73% 0.014 265);
+    --color-accent: oklch(74% 0.14 262);
+    --color-accent-contrast: oklch(19% 0.016 265);
+    --color-accent-soft: oklch(30% 0.045 262);
+
+    /* Shadows do little on a dark page; depth comes from the surfaces. */
+    --shadow-soft: 0 1px 2px oklch(0% 0 0 / 0.3);
+    --shadow-lifted: 0 2px 4px oklch(0% 0 0 / 0.3), 0 12px 28px oklch(0% 0 0 / 0.35);
 
     /*
      * The status colours need lightening too, which the first version of this
@@ -51,6 +83,52 @@
 body {
   background-color: var(--color-surface);
   color: var(--color-content);
+}
+
+/*
+ * Anything that responds to a click says so.
+ *
+ * Browsers give `button` a default arrow cursor, which on the web reads as
+ * "this is not clickable" - a convention older than the default. Set once
+ * here rather than remembered on every component.
+ */
+button:not(:disabled),
+summary,
+label:has(input[type='checkbox']:not(:disabled)),
+select:not(:disabled),
+[role='tab'] {
+  cursor: pointer;
+}
+
+/*
+ * A scrollbar that belongs to the page rather than to the operating system.
+ *
+ * The default on a dark surface is a bright, wide bar that draws the eye to
+ * the edge of a panel instead of to its contents.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-content-muted);
 }
 
 /* Keyboard users must always be able to see where they are. */

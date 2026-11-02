@@ -57,12 +57,41 @@ export function SystemStatus() {
     );
   }
 
+  /*
+    A summary line that opens, rather than four rows always on screen.
+
+    In a sidebar the expanded form took as much room as five documents to
+    say the same thing four times, and a reader only ever wants the detail
+    when the summary is not "operational". `<details>` gives that for free,
+    including keyboard operation, and the summary stays in the live region so
+    a change is still announced.
+  */
+  const healthy = data.status === 'ok';
+
   return (
-    <ul aria-live="polite" className="bg-surface-muted border-border rounded-lg border px-4">
-      <StatusRow label={t('overall')} status={data.status} />
-      <StatusRow label={t('database')} status={data.dependencies.database.status} />
-      <StatusRow label={t('redis')} status={data.dependencies.redis.status} />
-      <StatusRow label={t('storage')} status={data.dependencies.storage.status} />
-    </ul>
+    <details
+      className="border-border-subtle bg-surface-muted/60 group rounded-lg border px-3 py-2"
+      open={!healthy}
+    >
+      <summary
+        aria-live="polite"
+        className="text-content-muted marker:content-none flex cursor-pointer list-none items-center gap-2 text-xs"
+      >
+        <span
+          aria-hidden
+          className={`size-1.5 shrink-0 rounded-full ${healthy ? 'bg-ok' : 'bg-danger'}`}
+        />
+        <span className="flex-1">{healthy ? t('allOperational') : t('someDegraded')}</span>
+        <span aria-hidden className="transition-transform group-open:rotate-180">
+          ⌃
+        </span>
+      </summary>
+
+      <ul className="mt-1">
+        <StatusRow label={t('database')} status={data.dependencies.database.status} />
+        <StatusRow label={t('redis')} status={data.dependencies.redis.status} />
+        <StatusRow label={t('storage')} status={data.dependencies.storage.status} />
+      </ul>
+    </details>
   );
 }

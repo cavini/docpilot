@@ -25,7 +25,7 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
 }
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors ' +
+  'inline-flex cursor-pointer items-center justify-center gap-2 rounded-md font-medium transition-colors ' +
   'disabled:cursor-not-allowed disabled:opacity-50 aria-busy:cursor-progress';
 
 const VARIANT: Record<ButtonVariant, string> = {

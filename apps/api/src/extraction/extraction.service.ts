@@ -48,7 +48,15 @@ export interface ExtractionResult {
   /** Whether the first attempt failed and had to be repaired. */
   repaired: boolean;
   usage: { inputTokens: number; outputTokens: number; costUsd: number };
-  /** Whether the day's spend ceiling forced this onto the mock. */
+  /**
+   * Whether these rows came from somewhere other than a real model.
+   *
+   * True when the day's spend ceiling forced the mock, and true when the
+   * deployment is running on the mock to begin with. A caller rendering a
+   * table needs one flag for "do not read this as data" - the alternative
+   * was the mock announcing itself in prose inside a cell, which is
+   * indistinguishable from a row the model actually produced.
+   */
   degraded: boolean;
 }
 
@@ -184,10 +192,12 @@ export class ExtractionService {
     // The mock answers prose unless scripted otherwise, so the endpoint would
     // be undemonstrable without a key. The script is obviously canned - see
     // `cannedMockExtraction`.
-    const degraded = !(await this.budget.allowsModelCall());
+    const spent = !(await this.budget.allowsModelCall());
     const { model, provider, modelId } = this.chatModel(cannedMockExtraction(name), {
-      forceMock: degraded,
+      forceMock: spent,
     });
+    // Either way the rows are not a model's work.
+    const degraded = spent || provider === 'mock';
     const startedAt = Date.now();
     let inputTokens = 0;
     let outputTokens = 0;
@@ -297,7 +307,7 @@ export class ExtractionService {
       type: 'schema',
       schema: name,
       citations,
-      degraded: budget.exhausted,
+      degraded: budget.exhausted || this.env.LLM_PROVIDER === 'mock',
       resetsAt: budget.resetsAt?.toISOString() ?? null,
     };
 

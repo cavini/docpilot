@@ -50,7 +50,8 @@ export function ExtractionView(): ReactNode {
   const [schemas, setSchemas] = useState<SchemaSummary[]>([]);
   const [selected, setSelected] = useState<string>('');
   const [loadFailed, setLoadFailed] = useState(false);
-  const { status, items, citations, dropped, error, run, stop, reset } = useExtraction();
+  const { status, items, citations, dropped, degraded, budgetSpent, error, run, stop, reset } =
+    useExtraction();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -81,11 +82,22 @@ export function ExtractionView(): ReactNode {
   }, [run, selected]);
 
   return (
-    <section className="flex flex-col gap-4" aria-labelledby="extraction-heading">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="extraction-heading" className="text-content text-lg font-semibold">
-          {t('heading')}
-        </h2>
+    /*
+      Centred on the same column as the conversation. Left-aligned against a
+      full-width pane, the heading and its explanation sat on one edge of the
+      screen with the table they describe nowhere near them.
+    */
+    <section
+      className="mx-auto flex w-full max-w-3xl flex-col gap-5 overflow-y-auto px-5 py-6"
+      aria-labelledby="extraction-heading"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex flex-col gap-1">
+          <h2 id="extraction-heading" className="text-content text-lg font-semibold">
+            {t('heading')}
+          </h2>
+          <p className="text-content-muted max-w-prose text-sm leading-relaxed">{t('intro')}</p>
+        </div>
         {items.length === 0 ? null : (
           <Button
             size="sm"
@@ -98,8 +110,6 @@ export function ExtractionView(): ReactNode {
           </Button>
         )}
       </div>
-
-      <p className="text-content-muted text-sm">{t('intro')}</p>
 
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-sm">
@@ -139,6 +149,32 @@ export function ExtractionView(): ReactNode {
           <StatusBadge tone="warn">{t('dropped', { count: dropped })}</StatusBadge>
         ) : null}
       </div>
+
+      {/*
+        What this choice actually produces, in a sentence. The chooser named
+        three things and explained none of them, so picking one was a guess
+        and the table that came back was a surprise.
+      */}
+      {schema === undefined ? null : (
+        <p className="text-content-muted max-w-prose text-sm leading-relaxed">
+          {t.has(`about.${schema.name}`) ? t(`about.${schema.name}`) : schema.description}
+        </p>
+      )}
+
+      {/*
+        Said above the table, not inside it. The placeholder row used to
+        explain itself in its own cells, which is indistinguishable from a
+        row the model produced - and reads as gibberish to anyone who does
+        not know what LLM_PROVIDER is.
+      */}
+      {degraded && items.length > 0 ? (
+        <p
+          role="status"
+          className="border-warn/30 bg-warn/10 text-content max-w-prose rounded-lg border px-3 py-2 text-sm leading-relaxed"
+        >
+          {budgetSpent ? t('budgetNotice') : t('mockNotice')}
+        </p>
+      ) : null}
 
       {loadFailed ? <p className="text-danger text-sm">{t('schemasUnavailable')}</p> : null}
 

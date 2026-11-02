@@ -73,9 +73,15 @@ test('AC7: a ready document shows what makes it searchable', async ({ page }) =>
   await stubApi(page, [ready]);
   await page.goto('/en');
 
-  await expect(page.getByText('lumen-api', { exact: true })).toBeVisible();
-  await expect(page.getByText('Ready')).toBeVisible();
-  await expect(page.getByText(/7 passages/)).toBeVisible();
+  const row = page.getByRole('listitem').filter({ hasText: 'lumen-api' });
+
+  await expect(row).toBeVisible();
+  // The state is a dot with the word for assistive technology; the count is
+  // revealed when the row is reached, so a rail is a list of titles.
+  await expect(row.getByText('Ready', { exact: true })).toBeAttached();
+
+  await row.hover();
+  await expect(row.getByText(/7 passages/)).toBeVisible();
 });
 
 test("AC8: a failed document shows the server's reason and offers retry", async ({ page }) => {
@@ -90,7 +96,12 @@ test('AC10: deleting asks first', async ({ page }) => {
   await stubApi(page, [ready]);
   await page.goto('/en');
 
-  await page.getByRole('button', { name: 'Delete' }).click();
+  // Reached before it can be pressed: row actions appear on hover or focus
+  // rather than sitting in every row.
+  const row = page.getByRole('listitem').filter({ hasText: 'lumen-api' });
+
+  await row.hover();
+  await row.getByRole('button', { name: 'Delete' }).click();
 
   await expect(page.getByText('Delete this document and its passages?')).toBeVisible();
 });
@@ -101,7 +112,12 @@ test('AC14: the library is fully localised in pt-BR', async ({ page }) => {
 
   await expect(page.getByRole('heading', { name: 'Documentos' })).toBeVisible();
   await expect(page.getByText('Arraste um documento aqui, ou escolha um')).toBeVisible();
-  await expect(page.getByText('Pronto')).toBeVisible();
+  await expect(
+    page
+      .getByRole('listitem')
+      .filter({ hasText: 'lumen-api' })
+      .getByText('Pronto', { exact: true }),
+  ).toBeAttached();
   await expect(page.getByText(/7 trechos/)).toBeVisible();
   // The size separator follows the locale, which is the thing that breaks when
   // a number is assembled by hand instead of formatted.

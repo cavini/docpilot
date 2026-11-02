@@ -24,10 +24,16 @@ export function LocaleSwitcher() {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="text-content-muted">{t('label')}</span>
+    /*
+      The visible label is gone, not the label itself. Stacked above the
+      control it made the least important thing on the page into the tallest
+      element in the header, next to the logo. The accessible name is carried
+      by `sr-only` text, so nothing is lost to a screen reader.
+    */
+    <label className="flex items-center text-sm">
+      <span className="sr-only">{t('label')}</span>
       <select
-        className="border-border bg-surface rounded-md border px-2 py-1"
+        className="border-border bg-surface-raised text-content-muted hover:text-content cursor-pointer rounded-md border px-2 py-1 text-xs transition-colors"
         value={locale}
         disabled={isPending}
         onChange={(event) => {

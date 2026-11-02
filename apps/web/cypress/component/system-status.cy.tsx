@@ -13,12 +13,20 @@ const healthy = {
 };
 
 describe('SystemStatus in a real browser', () => {
-  it('AC1: renders every dependency once the API answers', () => {
+  it('AC1: summarises when healthy, and names every dependency when opened', () => {
     cy.intercept('GET', '**/health', { statusCode: 200, body: healthy }).as('health');
 
     cy.mountWithProviders(<SystemStatus />);
 
     cy.wait('@health');
+
+    // Healthy is one line. Four rows of "Operational" in a sidebar is four
+    // ways of saying nothing is wrong.
+    cy.contains('All systems operational').should('be.visible');
+    cy.contains('Database').should('not.be.visible');
+
+    cy.get('summary').click();
+
     cy.contains('Database').should('be.visible');
     cy.contains('Redis').should('be.visible');
     cy.contains('Storage').should('be.visible');
@@ -47,9 +55,12 @@ describe('SystemStatus in a real browser', () => {
     cy.mountWithProviders(<SystemStatus />);
 
     cy.wait('@health');
-    // Four rows: overall plus each dependency.
+    cy.get('summary').click();
+
+    // One row per dependency. The overall state is the summary line above
+    // them, which says it in words of its own.
+    cy.get('li').should('have.length', 3);
     cy.contains('Operational').should('be.visible');
-    cy.get('li').should('have.length', 4);
   });
 
   it('AC4: tells the reader what to do when the API cannot be reached', () => {
@@ -57,6 +68,6 @@ describe('SystemStatus in a real browser', () => {
 
     cy.mountWithProviders(<SystemStatus />);
 
-    cy.contains('The API is not reachable').should('be.visible');
+    cy.contains('The service is not responding').should('be.visible');
   });
 });

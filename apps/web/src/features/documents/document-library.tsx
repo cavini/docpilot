@@ -91,16 +91,34 @@ export function DocumentLibrary(): ReactNode {
     [describeRejection, t, upload],
   );
 
+  const ready = documents.filter((document) => document.status === 'ready').length;
+
   return (
-    <section className="flex flex-col gap-4" aria-labelledby="library-heading">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="library-heading" className="text-lg font-semibold text-content">
+    <section className="flex flex-col gap-3" aria-labelledby="library-heading">
+      <div className="flex items-baseline justify-between gap-2 px-2 pt-1">
+        <h2
+          id="library-heading"
+          className="text-content-muted text-xs font-semibold tracking-wide uppercase"
+        >
           {t('heading')}
         </h2>
-        {uploading.isLoading ? <Spinner label={t('uploading')} /> : null}
+        {/* The count carries more than the heading does: it is how a reader
+            knows whether the thing they just uploaded has finished. */}
+        {documents.length === 0 ? null : (
+          <span className="text-content-muted text-xs tabular-nums">
+            {t('readyOf', { ready, total: documents.length })}
+          </span>
+        )}
       </div>
 
+      {uploading.isLoading ? (
+        <div className="px-2">
+          <Spinner label={t('uploading')} />
+        </div>
+      ) : null}
+
       <Dropzone
+        compact
         accept={ACCEPT_ATTRIBUTE}
         label={t('dropzone.label')}
         hint={t('dropzone.hint', { limit: MAX_UPLOAD_MB })}
@@ -152,7 +170,7 @@ export function DocumentLibrary(): ReactNode {
       ) : null}
 
       {documents.length === 0 ? null : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-0.5">
           {documents.map((document) => (
             <DocumentRow
               key={document.id}

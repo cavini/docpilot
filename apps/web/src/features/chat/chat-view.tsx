@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, EmptyState, MessageBubble, Spinner } from '@docpilot/ui';
+import { Button, Mark, MessageBubble, Spinner } from '@docpilot/ui';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
@@ -54,6 +54,19 @@ export function ChatView(): ReactNode {
     }
   };
 
+  /**
+   * Asks one of the suggested questions straight away.
+   *
+   * Filling the box and waiting for a second click made the suggestion a
+   * typing shortcut for a question the reader had not chosen to ask. It
+   * reads as a button, so it behaves as one.
+   */
+  const askSuggestion = (suggestion: string): void => {
+    if (!busy) {
+      ask(suggestion);
+    }
+  };
+
   // Stable, so the message components below can memoise on it.
   const openCitations = useCallback((messageId: string, n: number): void => {
     setOpen({ messageId, n });
@@ -63,62 +76,23 @@ export function ChatView(): ReactNode {
     open === null ? undefined : messages.find((message) => message.id === open.messageId);
 
   return (
-    <div className="flex gap-4">
-      <section className="flex min-w-0 flex-1 flex-col gap-4" aria-labelledby="chat-heading">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id="chat-heading" className="text-content text-lg font-semibold">
-            {t('heading')}
-          </h2>
-          <div className="flex items-center gap-3">
-            {/*
-              A checkbox rather than two endpoints behind two buttons: the
-              question is the same either way, and what changes is whether the
-              model may reach for a tool to answer it.
-            */}
-            <label className="text-content-muted flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={mode === 'agent'}
-                disabled={busy}
-                onChange={(event) => {
-                  setMode(event.target.checked ? 'agent' : 'chat');
-                }}
-                className="accent-accent"
-              />
-              {t('useTools')}
-            </label>
-
-            {messages.length === 0 ? null : (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setOpen(null);
-                  reset();
-                }}
-              >
-                {t('newConversation')}
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/*
-          Bounded rather than flex-1: the page is not height constrained, so a
-          growing transcript would scroll the whole page and push the composer
-          off the bottom. Capped, it scrolls inside itself and the composer
-          stays where the reader left it.
-        */}
+    /*
+      Fills the pane and scrolls inside itself. The previous version capped
+      the transcript at 55vh because the page was not height constrained;
+      inside the shell it is, so the transcript can own the space that is
+      left and the composer can stay pinned to the bottom where a reader
+      expects to type.
+    */
+    <div className="flex min-h-0 flex-1">
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col" aria-label={t('heading')}>
         <div
           ref={transcript}
-          className="flex max-h-[55vh] flex-col gap-5 overflow-y-auto"
+          className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 overflow-y-auto px-5 py-6"
           role="log"
           aria-live="polite"
           aria-label={t('transcriptLabel')}
         >
-          {messages.length === 0 ? (
-            <EmptyState title={t('empty.title')} description={t('empty.description')} />
-          ) : null}
+          {messages.length === 0 ? <ChatWelcome onAsk={askSuggestion} /> : null}
 
           {messages.map((message) => (
             <MessageBubble
@@ -150,39 +124,82 @@ export function ChatView(): ReactNode {
           )}
         </div>
 
-        <form onSubmit={onSubmit} className="flex items-end gap-2">
-          <label htmlFor="chat-question" className="sr-only">
-            {t('questionLabel')}
-          </label>
-          <textarea
-            id="chat-question"
-            rows={2}
-            value={question}
-            placeholder={t('placeholder')}
-            onChange={(event) => {
-              setQuestion(event.target.value);
-            }}
-            onKeyDown={(event) => {
-              // Enter sends, Shift+Enter inserts a newline — the convention
-              // every chat interface uses, so doing anything else is a
-              // surprise rather than a choice.
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                onSubmit(event);
-              }
-            }}
-            className="border-border bg-surface text-content focus-visible:border-accent min-h-16 flex-1 resize-y rounded-lg border px-3 py-2 text-sm"
-          />
-          {busy ? (
-            <Button variant="secondary" onClick={stop}>
-              {t('stop')}
-            </Button>
-          ) : (
-            <Button type="submit" disabled={question.trim() === ''}>
-              {t('send')}
-            </Button>
-          )}
-        </form>
+        {/* Pinned to the bottom of the pane. The composer is the one thing
+            on the screen a reader always needs to find. */}
+        <div className="border-border-subtle shrink-0 border-t px-5 py-4">
+          <div className="text-content-muted mx-auto mb-2 flex w-full max-w-3xl items-center justify-between gap-3 text-xs">
+            {/*
+              A checkbox rather than two endpoints behind two buttons: the
+              question is the same either way, and what changes is whether
+              the model may reach for a tool to answer it.
+
+              Labelled by what the reader gets rather than by what it
+              switches. "Use tools" named the implementation, which meant
+              nothing to anyone who had not read the code.
+            */}
+            <label className="flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={mode === 'agent'}
+                disabled={busy}
+                onChange={(event) => {
+                  setMode(event.target.checked ? 'agent' : 'chat');
+                }}
+                className="accent-accent"
+              />
+              {t('useTools')}
+            </label>
+
+            {messages.length === 0 ? null : (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(null);
+                  reset();
+                }}
+                className="hover:text-content transition-colors"
+              >
+                {t('newConversation')}
+              </button>
+            )}
+          </div>
+          <form
+            onSubmit={onSubmit}
+            className="border-border bg-surface-raised shadow-soft focus-within:border-accent mx-auto flex w-full max-w-3xl items-end gap-2 rounded-xl border p-2 transition-colors"
+          >
+            <label htmlFor="chat-question" className="sr-only">
+              {t('questionLabel')}
+            </label>
+            <textarea
+              id="chat-question"
+              rows={1}
+              value={question}
+              placeholder={t('placeholder')}
+              onChange={(event) => {
+                setQuestion(event.target.value);
+              }}
+              onKeyDown={(event) => {
+                // Enter sends, Shift+Enter inserts a newline — the convention
+                // every chat interface uses, so doing anything else is a
+                // surprise rather than a choice.
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  onSubmit(event);
+                }
+              }}
+              className="text-content placeholder:text-content-muted max-h-40 min-h-10 flex-1 resize-y bg-transparent px-2 py-1.5 text-sm outline-none"
+            />
+            {busy ? (
+              <Button variant="secondary" onClick={stop}>
+                {t('stop')}
+              </Button>
+            ) : (
+              <Button type="submit" disabled={question.trim() === ''}>
+                {t('send')}
+              </Button>
+            )}
+          </form>
+        </div>
       </section>
 
       <CitationsPanel
@@ -192,6 +209,56 @@ export function ChatView(): ReactNode {
           setOpen(null);
         }}
       />
+    </div>
+  );
+}
+
+/**
+ * What fills the pane before anyone has asked anything.
+ *
+ * The previous empty state was a dashed box saying "Ask a question" above an
+ * input that already said "Ask about your documents", and claimed the
+ * documents were "above" when they were below. Two labels, one of them
+ * wrong, and nothing a reader could act on.
+ *
+ * This says what the thing does and hands over three questions the seeded
+ * corpus can actually answer. A reader who has never seen the app can get a
+ * cited answer without typing a word, which is the whole point of a demo.
+ */
+function ChatWelcome({ onAsk }: { onAsk: (question: string) => void }) {
+  const t = useTranslations('chat');
+  const examples = ['auth', 'rateLimits', 'refunds'] as const;
+
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-6 py-10 text-center">
+      <div className="bg-accent-soft text-accent flex size-14 items-center justify-center rounded-2xl">
+        <Mark size={30} />
+      </div>
+
+      <div className="flex max-w-md flex-col gap-2">
+        <h2 className="text-content text-xl font-semibold tracking-tight">{t('welcome.title')}</h2>
+        <p className="text-content-muted text-sm leading-relaxed">{t('welcome.body')}</p>
+      </div>
+
+      <div className="flex flex-col items-center gap-2">
+        <span className="text-content-muted text-xs tracking-wide uppercase">
+          {t('welcome.tryLabel')}
+        </span>
+        <div className="flex flex-wrap justify-center gap-2">
+          {examples.map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => {
+                onAsk(t(`welcome.examples.${key}`));
+              }}
+              className="border-border bg-surface-raised text-content hover:border-accent hover:text-accent shadow-soft rounded-full border px-3.5 py-1.5 text-sm transition-colors"
+            >
+              {t(`welcome.examples.${key}`)}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

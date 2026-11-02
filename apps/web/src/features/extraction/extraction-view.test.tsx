@@ -133,7 +133,7 @@ describe('ExtractionView', () => {
   it('AC10: offers every shape the server published, named in the reader language', async () => {
     renderWithProviders(<ExtractionView />);
 
-    const chooser = await screen.findByLabelText('Shape');
+    const chooser = await screen.findByLabelText('What to pull out');
 
     expect(chooser).toHaveValue('api_endpoints');
     expect(screen.getByRole('option', { name: 'API endpoints' })).toBeInTheDocument();
@@ -144,7 +144,7 @@ describe('ExtractionView', () => {
     stubFetch({ stream: () => streamed(threeRows) });
     renderWithProviders(<ExtractionView />);
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Extract' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Build the table' }));
 
     expect(await screen.findByText('/auth/token')).toBeInTheDocument();
     expect(await screen.findByText('/invoices')).toBeInTheDocument();
@@ -157,7 +157,7 @@ describe('ExtractionView', () => {
     stubFetch({ stream: () => streamed(threeRows) });
     renderWithProviders(<ExtractionView />);
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Extract' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Build the table' }));
 
     expect(await screen.findByText(/Read from 1 passage in lumen-api/)).toBeInTheDocument();
   });
@@ -166,8 +166,8 @@ describe('ExtractionView', () => {
     const fetchMock = stubFetch({ stream: () => streamed(threeRows) });
     renderWithProviders(<ExtractionView />);
 
-    await userEvent.selectOptions(await screen.findByLabelText('Shape'), 'faq_pairs');
-    await userEvent.click(screen.getByRole('button', { name: 'Extract' }));
+    await userEvent.selectOptions(await screen.findByLabelText('What to pull out'), 'faq_pairs');
+    await userEvent.click(screen.getByRole('button', { name: 'Build the table' }));
 
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(([url]) =>
@@ -183,16 +183,16 @@ describe('ExtractionView', () => {
     stubFetch({ stream: () => streamed(threeRows) });
     renderWithProviders(<ExtractionView />);
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Extract' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Build the table' }));
     expect(await screen.findByText('/auth/token')).toBeInTheDocument();
 
-    await userEvent.selectOptions(screen.getByLabelText('Shape'), 'faq_pairs');
+    await userEvent.selectOptions(screen.getByLabelText('What to pull out'), 'faq_pairs');
 
     // Rows from one shape under another shape's headings would be a table
     // that lies about what it is showing, so the result goes with the shape.
     expect(screen.queryByText('/auth/token')).not.toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    expect(screen.getByText('Nothing extracted yet')).toBeInTheDocument();
+    expect(screen.getByText('Nothing built yet')).toBeInTheDocument();
   });
 
   it('AC2: shows the server reason when the shape is refused', async () => {
@@ -202,7 +202,7 @@ describe('ExtractionView', () => {
     });
     renderWithProviders(<ExtractionView />);
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Extract' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Build the table' }));
 
     expect(await screen.findByText('No schema named "nope".')).toBeInTheDocument();
   });
@@ -214,7 +214,7 @@ describe('ExtractionView', () => {
     expect(await screen.findByText('The list of shapes could not be loaded.')).toBeInTheDocument();
 
     // Nothing to extract with, so nothing to press.
-    expect(screen.getByRole('button', { name: 'Extract' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Build the table' })).toBeDisabled();
   });
 
   it('counts dropped items rather than hiding them', async () => {
@@ -231,7 +231,7 @@ describe('ExtractionView', () => {
     });
     renderWithProviders(<ExtractionView />);
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Extract' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Build the table' }));
 
     expect(await screen.findByText('2 items dropped')).toBeInTheDocument();
   });
@@ -240,10 +240,10 @@ describe('ExtractionView', () => {
     stubFetch({ stream: () => streamed(threeRows) });
     renderWithProviders(<ExtractionView />);
 
-    await screen.findByLabelText('Shape');
+    await screen.findByLabelText('What to pull out');
     expect(screen.queryByRole('button', { name: 'Download JSON' })).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Extract' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Build the table' }));
 
     expect(await screen.findByRole('button', { name: 'Download JSON' })).toBeInTheDocument();
   });
@@ -281,7 +281,7 @@ describe('ExtractionView', () => {
     });
 
     renderWithProviders(<ExtractionView />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Extract' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Build the table' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Download JSON' }));
 
     expect(downloadName).toBe('api_endpoints.json');
@@ -325,16 +325,16 @@ describe('ExtractionView', () => {
     });
 
     renderWithProviders(<ExtractionView />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Extract' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Build the table' }));
 
     const stop = await screen.findByRole('button', { name: 'Stop' });
 
-    expect(screen.queryByRole('button', { name: 'Extract' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Build the table' })).not.toBeInTheDocument();
 
     await userEvent.click(stop);
 
     // Stopping ends the run; it does not report a failure.
-    expect(await screen.findByRole('button', { name: 'Extract' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Build the table' })).toBeInTheDocument();
     release?.();
   });
 });

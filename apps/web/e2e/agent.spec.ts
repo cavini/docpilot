@@ -115,7 +115,7 @@ async function stubAgent(page: Page, body: string): Promise<{ posts: unknown[] }
 
 /** Turns on tool use and asks a question. */
 async function askWithTools(page: Page, question: string): Promise<void> {
-  await page.getByLabel('Use tools').check();
+  await page.getByLabel('Search across documents').check();
   await page.getByLabel('Your question').fill(question);
   await page.getByRole('button', { name: 'Send', exact: true }).click();
 }
@@ -124,7 +124,7 @@ test('the chat does not use tools until asked to', async ({ page }) => {
   const { posts } = await stubAgent(page, searchTurn());
   await page.goto('/en');
 
-  await expect(page.getByLabel('Use tools')).not.toBeChecked();
+  await expect(page.getByLabel('Search across documents')).not.toBeChecked();
   expect(posts).toHaveLength(0);
 });
 
@@ -135,7 +135,7 @@ test('AC2: a tool call shows its name and status', async ({ page }) => {
   await askWithTools(page, 'How do I verify a webhook signature?');
 
   await expect(page.getByText('search_docs')).toBeVisible();
-  await expect(page.getByText('Done')).toBeVisible();
+  await expect(page.getByText('Done', { exact: true })).toBeVisible();
 });
 
 test('AC2: the step is collapsed until asked, then shows input and output', async ({ page }) => {
@@ -207,7 +207,7 @@ test('AC14: the agent interface is localised in pt-BR', async ({ page }) => {
   await stubAgent(page, approvalTurn());
   await page.goto('/pt-BR');
 
-  await page.getByLabel('Usar ferramentas').check();
+  await page.getByLabel('Pesquisar em vários documentos').check();
   await page.getByLabel('Sua pergunta').fill('Abra um chamado');
   await page.getByRole('button', { name: 'Enviar', exact: true }).click();
 
