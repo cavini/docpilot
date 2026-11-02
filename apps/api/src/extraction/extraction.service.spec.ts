@@ -40,7 +40,19 @@ function asArrayOutput(items: unknown): ScriptedResponse {
 
 /** Builds the service with everything substituted. */
 function createService(
-  options: { results?: ScoredChunk[]; script?: ScriptedResponse[]; budget?: BudgetLike } = {},
+  options: {
+    results?: ScoredChunk[];
+    script?: ScriptedResponse[];
+    budget?: BudgetLike;
+    /**
+     * Which provider the substitute stands in for.
+     *
+     * The scripted model is a mock underneath whatever this says. It matters
+     * because rows from a mock are reported as degraded regardless of the
+     * budget, so a test meaning "a real provider answered" has to say so.
+     */
+    provider?: string;
+  } = {},
 ) {
   const budget = options.budget ?? budgetAllowing();
   const search = jest.fn().mockResolvedValue({
