@@ -1,0 +1,43 @@
+Sample document. Lumen Payments Inc. and Halcyon Retail Ltd are invented for
+this demo, and nothing below is legal advice or fit for use.
+
+AMENDMENT NO. 1 TO THE MASTER SERVICES AGREEMENT
+
+This Amendment No. 1 is made on 12 September 2026 between Lumen Payments Inc.
+("Lumen") and Halcyon Retail Ltd ("Customer"), and amends the Master Services
+Agreement between them dated 1 March 2026 (the "Agreement"). Terms defined in
+the Agreement have the same meaning here.
+
+The Parties have agreed to raise the availability commitment and to shorten the
+notice required to end the Agreement, in exchange for an increase in the
+platform fee. Accordingly the Parties agree as follows.
+
+1. Clause 6.1 of the Agreement is deleted and replaced with the following:
+
+   "6.1 Uptime commitment. Lumen will make the Platform's payment capture and
+   authorisation endpoints available 99.95% of the time in each calendar
+   month, measured as the proportion of one-minute intervals in which a
+   well-formed request received a response other than 5xx."
+
+2. Clause 4.3 of the Agreement is amended by replacing "90 days" with "60
+   days", so that either Party may now terminate at the end of the Initial
+   Term, or of any renewal period, on at least 60 days written notice.
+
+3. Clause 3.1 of the Agreement is amended by replacing "USD 7,500 per month"
+   with "USD 8,900 per month". The transaction fee of 0.4% of Processed Volume
+   is unchanged.
+
+4. The cap on service credits in Clause 6.2 is raised from 30% to 40% of the
+   month's platform fee. The rate of 10% of the platform fee for each full
+   0.1% below the commitment is unchanged.
+
+5. This Amendment takes effect on 1 October 2026. The change to Clause 3.1
+   applies from the first invoice issued on or after that date, and the change
+   to Clause 6.1 applies to availability measured in October 2026 and in each
+   month after it.
+
+6. Everything else in the Agreement is unchanged and remains in force. Where
+   this Amendment and the Agreement disagree, this Amendment prevails.
+
+Signed for and on behalf of Lumen Payments Inc. and Halcyon Retail Ltd by their
+authorised signatories on the date first written above.
