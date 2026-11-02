@@ -35,6 +35,8 @@ pnpm-debug.log*
 # Local data
 /uploads/
 /tmp/
+# Rendered from the Markdown beside them by `pnpm contracts:pdf`.
+/demo-docs/contracts/pdf/
 
 # Editors and OS
 .DS_Store

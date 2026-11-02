@@ -10,9 +10,88 @@ export interface PdfExtras {
   catalog?: string;
 }
 
+/**
+ * Characters WinAnsiEncoding places outside Latin-1.
+ *
+ * Code points 0x80 to 0x9F are control characters in Latin-1 and typographic
+ * ones in WinAnsi, which is the whole difference between the two. A contract
+ * is written with most of this row - an em dash, curly quotes, an ellipsis -
+ * so leaving it out would reject the documents this exists to render.
+ */
+const WIN_ANSI_SPECIALS: Record<string, number> = {
+  '\u20ac': 0x80,
+  '\u201a': 0x82,
+  '\u0192': 0x83,
+  '\u201e': 0x84,
+  '\u2026': 0x85,
+  '\u2020': 0x86,
+  '\u2021': 0x87,
+  '\u02c6': 0x88,
+  '\u2030': 0x89,
+  '\u0160': 0x8a,
+  '\u2039': 0x8b,
+  '\u0152': 0x8c,
+  '\u017d': 0x8e,
+  '\u2018': 0x91,
+  '\u2019': 0x92,
+  '\u201c': 0x93,
+  '\u201d': 0x94,
+  '\u2022': 0x95,
+  '\u2013': 0x96,
+  '\u2014': 0x97,
+  '\u02dc': 0x98,
+  '\u2122': 0x99,
+  '\u0161': 0x9a,
+  '\u203a': 0x9b,
+  '\u0153': 0x9c,
+  '\u017e': 0x9e,
+  '\u0178': 0x9f,
+};
+
+/**
+ * Re-encodes text so that one character is one byte, in WinAnsiEncoding.
+ *
+ * Everything downstream counts bytes using `String.length`: the content
+ * stream's `/Length`, and the cross-reference table's offsets into the file.
+ * That is only true while every character is one byte, so the conversion
+ * happens here rather than at the end, and the rest of the builder keeps
+ * working in characters.
+ *
+ * @param text Source text.
+ * @returns The same text, one byte per character.
+ * @throws If a character has no WinAnsi position. Substituting `?` would put a
+ *   corrupted fixture in front of a reader and tell nobody; a fixture that
+ *   fails to build is found by whoever is building it.
+ */
+function toWinAnsi(text: string): string {
+  let encoded = '';
+
+  for (const character of text) {
+    const code = character.codePointAt(0) ?? 0;
+    const special = WIN_ANSI_SPECIALS[character];
+
+    if (special !== undefined) {
+      encoded += String.fromCharCode(special);
+      continue;
+    }
+
+    if ((code >= 0x20 && code <= 0x7e) || (code >= 0xa0 && code <= 0xff)) {
+      encoded += String.fromCharCode(code);
+      continue;
+    }
+
+    throw new Error(
+      `"${character}" (U+${code.toString(16).toUpperCase().padStart(4, '0')}) cannot be written ` +
+        'in WinAnsiEncoding, which is all the Helvetica in this PDF can draw.',
+    );
+  }
+
+  return encoded;
+}
+
 /** Escapes the characters that are special inside a PDF string literal. */
 function escapePdfText(text: string): string {
-  return text.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+  return toWinAnsi(text).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
 }
 
 /**
@@ -23,6 +102,10 @@ function escapePdfText(text: string): string {
  * a reviewer cannot read. Each page holds one line per entry, drawn in
  * Helvetica, which is enough to exercise the one thing that matters here: that
  * text comes back attributed to the right page.
+ *
+ * Text is written in WinAnsiEncoding, so anything Latin-1 can hold survives
+ * the round trip. That covers Portuguese, which is the point: an accent that
+ * comes back as punctuation is a fixture a reader would blame on retrieval.
  *
  * @param pages One entry per page; each entry is a list of lines.
  * @returns The PDF's bytes.
@@ -64,7 +147,8 @@ export function buildPdf(pages: string[][], extras: PdfExtras = {}): Uint8Array 
   objects[2] =
     `<< /Type /Pages /Kids [${pageObjectNumbers.map((n) => `${String(n)} 0 R`).join(' ')}] ` +
     `/Count ${String(pages.length)} >>`;
-  objects[fontObject] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+  objects[fontObject] =
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
 
   // A PDF's cross-reference table is byte offsets into the file, so the body
   // has to be laid out before the table can be written.
@@ -89,7 +173,9 @@ export function buildPdf(pages: string[][], extras: PdfExtras = {}): Uint8Array 
     `trailer\n<< /Size ${String(size)} /Root 1 0 R >>\n` +
     `startxref\n${String(xrefOffset)}\n%%EOF\n`;
 
-  return new TextEncoder().encode(body + xref + trailer);
+  // Latin-1, not UTF-8: every offset above was measured in characters, and
+  // only a one-byte-per-character encoding makes those measurements true.
+  return new Uint8Array(Buffer.from(body + xref + trailer, 'latin1'));
 }
 
 /**

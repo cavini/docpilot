@@ -1,0 +1,49 @@
+Documento de exemplo. Lumen Pagamentos Ltda. e Aurora Varejo S.A. foram
+inventadas para esta demonstração, e nada do que segue é orientação jurídica
+nem serve para uso real.
+
+PRIMEIRO TERMO ADITIVO AO CONTRATO DE PRESTAÇÃO DE SERVIÇOS DE PAGAMENTO
+
+Pelo presente Primeiro Termo Aditivo, celebrado em 20 de outubro de 2026 entre
+Lumen Pagamentos Ltda. ("Lumen") e Aurora Varejo S.A. ("Cliente"), as Partes
+aditam o Contrato de Prestação de Serviços de Pagamento celebrado entre elas em
+1º de abril de 2026 (o "Contrato"). Os termos definidos no Contrato têm aqui o
+mesmo significado.
+
+As Partes ajustaram elevar o compromisso de disponibilidade e ampliar o prazo
+de aviso para a rescisão imotivada, mediante aumento da mensalidade. Assim,
+resolvem o seguinte.
+
+1. A Cláusula 6.1 do Contrato fica revogada e substituída pela seguinte:
+
+   "6.1 Compromisso de disponibilidade. A Lumen manterá os endpoints de
+   captura e autorização de pagamento disponíveis 99,8% do tempo em cada mês
+   civil, apurados como a proporção de intervalos de um minuto em que uma
+   requisição bem formada obteve resposta distinta de 5xx."
+
+2. A Cláusula 4.3 do Contrato passa a exigir aviso prévio de 90 (noventa)
+   dias, em lugar dos 60 (sessenta) dias originalmente pactuados, para a
+   rescisão ao final do Prazo Inicial ou de qualquer período de renovação.
+
+3. A Cláusula 3.1 do Contrato passa a prever mensalidade de R$ 34.500,00, em
+   lugar de R$ 28.000,00. A taxa transacional de 0,6% do Volume Transacionado
+   permanece inalterada.
+
+4. O limite dos créditos de serviço da Cláusula 6.2 fica elevado de 25% para
+   35% da mensalidade do mês. O percentual de 5% da mensalidade por hora
+   completa de indisponibilidade permanece inalterado.
+
+5. A Cláusula 7.3 do Contrato passa a prever comunicação de incidente de
+   segurança em até 24 horas, em lugar das 48 horas originalmente pactuadas.
+
+6. Este Termo Aditivo produz efeitos a partir de 1º de novembro de 2026. A
+   alteração da Cláusula 3.1 aplica-se à primeira fatura emitida a partir
+   dessa data, e a alteração da Cláusula 6.1 aplica-se à disponibilidade
+   apurada em novembro de 2026 e nos meses seguintes.
+
+7. Ficam ratificadas todas as demais disposições do Contrato não alteradas por
+   este instrumento. Havendo divergência entre este Termo Aditivo e o
+   Contrato, prevalece este Termo Aditivo.
+
+E por estarem assim justas e contratadas, as Partes firmam o presente
+instrumento por seus representantes legais, na data acima indicada.

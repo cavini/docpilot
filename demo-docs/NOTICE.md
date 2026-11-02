@@ -25,6 +25,13 @@ reaches a specific passage rather than hoping it does.
 `lumen-handbook.pdf` is produced by `pnpm seed`, from `lumen-handbook.md`, so
 the PDF is reproducible rather than an opaque binary in version control.
 
+## The contract corpus
+
+`contracts/` holds a second set: six contracts in Portuguese and English, meant
+to be uploaded by hand rather than seeded. They cover what this corpus does
+not - long prose with no code in it, numbered clauses, and figures that disagree
+between documents. See `contracts/NOTICE.md`.
+
 ## Swapping in real documentation
 
 Real public documentation is more representative and is worth adding: Fastify
