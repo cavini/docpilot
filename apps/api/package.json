@@ -22,6 +22,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "seed": "nest build && node dist/scripts/seed.js",
+    "contracts:pdf": "nest build && node dist/scripts/build-contract-pdfs.js",
     "record-embeddings": "nest build && node dist/scripts/record-embeddings.js",
     "db:migrate:run": "node dist/scripts/migrate.js"
   },

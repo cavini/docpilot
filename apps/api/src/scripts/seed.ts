@@ -90,9 +90,16 @@ async function seed(): Promise<void> {
   const processor = app.get(IngestionProcessor);
 
   try {
-    const entries = (await readdir(CORPUS_DIR)).filter(
-      (name) => name !== 'NOTICE.md' && MIME_TYPES[extname(name).toLowerCase()] !== undefined,
-    );
+    // Files only, and only at the top level. `demo-docs/contracts` holds a
+    // second corpus meant to be uploaded by hand, and seeding it would put its
+    // embedding cost on every deploy of the demo rather than on whoever
+    // chooses to pay it.
+    const entries = (await readdir(CORPUS_DIR, { withFileTypes: true }))
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name)
+      .filter(
+        (name) => name !== 'NOTICE.md' && MIME_TYPES[extname(name).toLowerCase()] !== undefined,
+      );
 
     for (const name of entries.sort()) {
       const raw = await readFile(join(CORPUS_DIR, name));

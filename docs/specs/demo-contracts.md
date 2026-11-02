@@ -1,6 +1,6 @@
 # Spec: Demo contract corpus
 
-Status: draft Milestone: M5
+Status: implemented Milestone: M5
 
 ## Problem and goal
 
@@ -70,9 +70,11 @@ registered for its type, then parsing succeeds and returns non-empty text.
 `detectLanguage`, then the result is `portuguese`; and given an English file,
 then the result is `english`.
 
-**AC3.** Given a contract file, when it is chunked with the configured chunk
-size, then more than one chunk is produced, so retrieval has passages to choose
-between rather than one passage that always matches.
+**AC3.** Given an agreement or an NDA, when it is chunked with the configured
+chunk size, then at least four chunks are produced, so retrieval has passages to
+choose between rather than one passage that always matches. An amendment is
+exempt: it is two pages, and the point of it is that one passage contradicts
+another document.
 
 **AC4.** Given the two services agreements, when the same negotiated term is
 read from each, then the figures differ, so a cross-document question has two
@@ -92,6 +94,10 @@ cross-reference table resolves without the reader having to rebuild it.
 **AC8.** Given text containing a character outside what the PDF encoding can
 represent, when a PDF is built from it, then the build throws naming the
 character, rather than writing a substitute into the file.
+
+**AC9.** Given a contract rendered to PDF, when it is read back, then the final
+heading and the last line beneath it are both present, so nothing ran off the
+bottom of a page and vanished.
 
 ## Edge cases and failure modes
 
@@ -121,16 +127,22 @@ all, which is correct rather than a gap.
 
 ## Test plan
 
-| AC  | Level | File                                                     |
-| --- | ----- | -------------------------------------------------------- |
-| AC1 | unit  | `apps/api/src/ingestion/parsers/contract-corpus.spec.ts` |
-| AC2 | unit  | `apps/api/src/ingestion/parsers/contract-corpus.spec.ts` |
-| AC3 | unit  | `apps/api/src/ingestion/parsers/contract-corpus.spec.ts` |
-| AC4 | unit  | `apps/api/src/ingestion/parsers/contract-corpus.spec.ts` |
-| AC5 | unit  | `apps/api/src/ingestion/parsers/contract-corpus.spec.ts` |
-| AC6 | unit  | `apps/api/src/ingestion/parsers/pdf.parser.spec.ts`      |
-| AC7 | unit  | `apps/api/src/ingestion/parsers/pdf.parser.spec.ts`      |
-| AC8 | unit  | `apps/api/src/ingestion/parsers/pdf.parser.spec.ts`      |
+| AC  | Level | File                                                  |
+| --- | ----- | ----------------------------------------------------- |
+| AC1 | unit  | `apps/api/src/scripts/contract-corpus.spec.ts`        |
+| AC2 | unit  | `apps/api/src/scripts/contract-corpus.spec.ts`        |
+| AC3 | unit  | `apps/api/src/scripts/contract-corpus.spec.ts`        |
+| AC4 | unit  | `apps/api/src/scripts/contract-corpus.spec.ts`        |
+| AC5 | unit  | `apps/api/src/scripts/contract-corpus.spec.ts`        |
+| AC6 | unit  | `apps/api/src/ingestion/parsers/pdf-encoding.spec.ts` |
+| AC7 | unit  | `apps/api/src/ingestion/parsers/pdf-encoding.spec.ts` |
+| AC8 | unit  | `apps/api/src/ingestion/parsers/pdf-encoding.spec.ts` |
+| AC9 | unit  | `apps/api/src/scripts/contract-corpus.spec.ts`        |
+
+The AC6 to AC8 tests sit in `pdf-encoding.spec.ts` rather than in
+`pdf.parser.spec.ts`, which already has an `AC6` of its own from the ingestion
+pipeline spec. Two different `AC6`s in one file would break the lookup the
+numbering exists for.
 
 ## Open questions
 
