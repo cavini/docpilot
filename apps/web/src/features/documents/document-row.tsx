@@ -44,6 +44,7 @@ export function DocumentRow({
   const locale = useLocale();
   const [confirming, setConfirming] = useState(false);
   const inFlight = isInFlight(document);
+  const [showActions, setShowActions] = useState(false);
 
   return (
     /*
@@ -142,9 +143,28 @@ export function DocumentRow({
         give, and except on a document that failed, where the retry is the
         only thing the row is for.
       */}
+      {/*
+        Where there is no hover to give, a muted toggle rather than the
+        actions themselves. Revealing them permanently turned the library
+        into a column of Delete buttons - a destructive action given the
+        most prominent thing in every row, on the screen with the least
+        room for it.
+      */}
+      <button
+        type="button"
+        aria-expanded={showActions}
+        aria-label={t('actionsLabel', { title: document.title })}
+        onClick={() => {
+          setShowActions((open) => !open);
+        }}
+        className="text-content-muted hover:text-content absolute top-1 right-1 hidden rounded px-2 py-1 text-sm leading-none [@media(hover:none)]:block"
+      >
+        ⋯
+      </button>
+
       <div
-        className={`bg-surface-muted absolute top-1.5 right-1.5 items-center gap-1 rounded-md shadow-sm group-focus-within:flex group-hover:flex [@media(hover:none)]:flex ${
-          document.status === 'failed' ? 'flex' : 'hidden'
+        className={`bg-surface-muted absolute top-1.5 right-1.5 items-center gap-1 rounded-md shadow-sm group-focus-within:flex group-hover:flex ${
+          document.status === 'failed' || showActions ? 'flex' : 'hidden'
         }`}
       >
         {document.status === 'failed' ? (

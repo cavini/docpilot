@@ -96,9 +96,13 @@ export function DocumentLibrary(): ReactNode {
   return (
     <section className="flex flex-col gap-3" aria-labelledby="library-heading">
       <div className="flex items-baseline justify-between gap-2 px-2 pt-1">
+        {/* Visible only where the rail has no header of its own. On a
+            narrow screen the sheet is already titled "Documents", and
+            saying it twice is the sort of thing that makes a panel feel
+            crowded without adding anything. */}
         <h2
           id="library-heading"
-          className="text-content-muted text-xs font-semibold tracking-wide uppercase"
+          className="text-content-muted hidden text-xs font-semibold tracking-wide uppercase lg:block"
         >
           {t('heading')}
         </h2>

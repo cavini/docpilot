@@ -72,7 +72,8 @@
       "english": "Inglês",
       "portuguese": "Português"
     },
-    "readyOf": "{ready} de {total} prontos"
+    "readyOf": "{ready} de {total} prontos",
+    "actionsLabel": "Ações para {title}"
   },
   "chat": {
     "heading": "Perguntar",
@@ -189,5 +190,10 @@
       "ask": "Perguntar",
       "extract": "Extrair"
     }
+  },
+  "shell": {
+    "library": "Biblioteca",
+    "documents": "Documentos",
+    "closeLibrary": "Fechar a biblioteca"
   }
 }

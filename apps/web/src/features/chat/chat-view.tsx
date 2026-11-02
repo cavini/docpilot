@@ -87,7 +87,7 @@ export function ChatView(): ReactNode {
       <section className="flex min-h-0 min-w-0 flex-1 flex-col" aria-label={t('heading')}>
         <div
           ref={transcript}
-          className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 overflow-y-auto px-5 py-6"
+          className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 overflow-y-auto px-4 py-4 sm:gap-6 sm:px-5 sm:py-6"
           role="log"
           aria-live="polite"
           aria-label={t('transcriptLabel')}
@@ -126,7 +126,7 @@ export function ChatView(): ReactNode {
 
         {/* Pinned to the bottom of the pane. The composer is the one thing
             on the screen a reader always needs to find. */}
-        <div className="border-border-subtle shrink-0 border-t px-5 py-4">
+        <div className="border-border-subtle bg-surface shrink-0 border-t px-4 py-3 sm:px-5 sm:py-4">
           <div className="text-content-muted mx-auto mb-2 flex w-full max-w-3xl items-center justify-between gap-3 text-xs">
             {/*
               A checkbox rather than two endpoints behind two buttons: the
@@ -230,21 +230,30 @@ function ChatWelcome({ onAsk }: { onAsk: (question: string) => void }) {
   const examples = ['auth', 'rateLimits', 'refunds'] as const;
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 py-10 text-center">
-      <div className="bg-accent-soft text-accent flex size-14 items-center justify-center rounded-2xl">
-        <Mark size={30} />
+    <div className="flex flex-1 flex-col items-center justify-center gap-5 py-6 text-center sm:gap-6 sm:py-10">
+      <div className="bg-accent-soft text-accent flex size-12 items-center justify-center rounded-2xl sm:size-14">
+        <Mark size={26} />
       </div>
 
       <div className="flex max-w-md flex-col gap-2">
-        <h2 className="text-content text-xl font-semibold tracking-tight">{t('welcome.title')}</h2>
-        <p className="text-content-muted text-sm leading-relaxed">{t('welcome.body')}</p>
+        <h2 className="text-content text-lg font-semibold tracking-tight sm:text-xl">
+          {t('welcome.title')}
+        </h2>
+        {/*
+          Hidden on the smallest screens. Three lines of explanation above
+          three buttons that explain themselves is a paragraph a reader has
+          to get past, on the one screen where vertical space is scarce.
+        */}
+        <p className="text-content-muted hidden text-sm leading-relaxed sm:block">
+          {t('welcome.body')}
+        </p>
       </div>
 
       <div className="flex flex-col items-center gap-2">
         <span className="text-content-muted text-xs tracking-wide uppercase">
           {t('welcome.tryLabel')}
         </span>
-        <div className="flex flex-wrap justify-center gap-2">
+        <div className="flex w-full flex-col items-stretch gap-2 px-4 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center sm:px-0">
           {examples.map((key) => (
             <button
               key={key}
